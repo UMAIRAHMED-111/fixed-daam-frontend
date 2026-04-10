@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Link } from "react-router-dom";
 import { ChevronLeft } from "lucide-react";
 import { useOrdersStore } from "@/stores/ordersStore";
@@ -5,6 +6,11 @@ import { OrderCard } from "../components/OrderCard";
 
 export function BuyerOrdersPage() {
   const orders = useOrdersStore((s) => s.orders);
+  const fetchOrders = useOrdersStore((s) => s.fetchOrders);
+
+  useEffect(() => {
+    fetchOrders();
+  }, [fetchOrders]);
 
   return (
     <div className="min-h-[calc(100vh-4rem)] bg-slate-50">

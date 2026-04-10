@@ -34,7 +34,7 @@ export function MerchantProductFormPage() {
   });
 
   useEffect(() => {
-    if (product && user?.email === product.merchantId) {
+    if (product && user?.id === product.merchantId) {
       form.reset({
         name: product.name,
         description: product.description ?? "",
@@ -44,7 +44,7 @@ export function MerchantProductFormPage() {
         imageUrls: (product.images ?? []).join("\n"),
       });
     }
-  }, [product, user?.email, form]);
+  }, [product, user?.id, form]);
 
   if (user?.role !== "merchant") {
     navigate("/dashboard", { replace: true });
@@ -67,35 +67,36 @@ export function MerchantProductFormPage() {
     );
   }
 
-  const onSubmit = (data) => {
+  const onSubmit = async (data) => {
     const images = parseImageUrls(data.imageUrls);
-    const merchantId = user.email;
-    const merchantName = user.storeName ?? "My Store";
-
-    if (isEdit) {
-      updateProduct(id, {
-        name: data.name,
-        description: data.description || "",
-        price: data.price,
-        category: data.category,
-        stock: data.stock,
-        images,
-      });
-      toast.success("Product updated");
-    } else {
-      addProduct({
-        merchantId,
-        merchantName,
-        name: data.name,
-        description: data.description || "",
-        price: data.price,
-        category: data.category,
-        stock: data.stock,
-        images,
-      });
-      toast.success("Product added");
+    try {
+      if (isEdit) {
+        await updateProduct(id, {
+          name: data.name,
+          description: data.description || "",
+          price: data.price,
+          category: data.category,
+          stock: data.stock,
+          images,
+        });
+        toast.success("Product updated");
+      } else {
+        await addProduct({
+          merchantId: user.id,
+          merchantName: user.storeName ?? user.name ?? "My Store",
+          name: data.name,
+          description: data.description || "",
+          price: data.price,
+          category: data.category,
+          stock: data.stock,
+          images,
+        });
+        toast.success("Product added");
+      }
+      navigate("/dashboard/inventory", { replace: true });
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to save product");
     }
-    navigate("/dashboard/inventory", { replace: true });
   };
 
   return (

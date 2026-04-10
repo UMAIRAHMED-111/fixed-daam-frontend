@@ -1,41 +1,56 @@
 import { create } from "zustand";
+import { api } from "@/lib/api";
 
 /**
- * Order: { id, items: [{ productId, name, price, quantity, merchantId? }], total, qrValue, status: 'locked'|'ready'|'delivered', createdAt }
+ * Orders store — backed by /v1/orders API.
+ * Order shape: { id, buyerId, items[], total, qrValue, status: 'locked'|'ready'|'delivered', createdAt }
  */
 export const useOrdersStore = create((set, get) => ({
   orders: [],
-  addOrder: (orderPayload) => {
-    const id = `ORD-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-    const order = {
-      id,
-      items: orderPayload.items.map((i) => ({
-        productId: i.productId,
-        name: i.name,
-        price: i.price,
-        quantity: i.quantity,
-        merchantId: i.merchantId ?? null,
-      })),
-      total: orderPayload.total,
-      qrValue: orderPayload.qrValue ?? id,
-      status: "locked",
-      createdAt: new Date().toISOString(),
-    };
+  loading: false,
+
+  /** Fetch orders for the current user (buyers: own orders; merchants: orders with their products) */
+  fetchOrders: async () => {
+    set({ loading: true });
+    try {
+      const res = await api.get("/v1/orders");
+      const data = res.data;
+      set({ orders: data.results ?? (Array.isArray(data) ? data : []) });
+    } catch {
+      // silent
+    } finally {
+      set({ loading: false });
+    }
+  },
+
+  /**
+   * Create a new order from cart items.
+   * @param {Array<{productId: string, quantity: number}>} cartItems
+   * @returns {Promise<Order>}
+   */
+  addOrder: async (cartItems) => {
+    const res = await api.post("/v1/orders", { items: cartItems });
+    const order = res.data;
     set((state) => ({ orders: [order, ...state.orders] }));
     return order;
   },
-  markReady: (orderId) =>
+
+  markReady: async (orderId) => {
+    const res = await api.patch(`/v1/orders/${orderId}/status`, { status: "ready" });
+    const updated = res.data;
     set((state) => ({
-      orders: state.orders.map((o) =>
-        o.id === orderId && o.status === "locked" ? { ...o, status: "ready" } : o
-      ),
-    })),
-  markDelivered: (orderId) =>
+      orders: state.orders.map((o) => (o.id === orderId ? updated : o)),
+    }));
+  },
+
+  markDelivered: async (orderId) => {
+    const res = await api.patch(`/v1/orders/${orderId}/status`, { status: "delivered" });
+    const updated = res.data;
     set((state) => ({
-      orders: state.orders.map((o) =>
-        o.id === orderId ? { ...o, status: "delivered" } : o
-      ),
-    })),
+      orders: state.orders.map((o) => (o.id === orderId ? updated : o)),
+    }));
+  },
+
   getOrdersForMerchant: (merchantId) =>
     get().orders.filter((o) =>
       o.items.some((i) => i.merchantId === merchantId)

@@ -1,14 +1,19 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useEffect, useState } from "react";
 import { SearchBar } from "../components/SearchBar";
 import { FiltersSidebar } from "../components/FiltersSidebar";
 import { ProductGrid } from "../components/ProductGrid";
+import { useInventoryStore } from "@/stores/inventoryStore";
 
 export function BuyerProductsPage() {
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("");
   const [priceMin, setPriceMin] = useState("");
   const [priceMax, setPriceMax] = useState("");
+  const fetchAllProducts = useInventoryStore((s) => s.fetchAllProducts);
+
+  useEffect(() => {
+    fetchAllProducts();
+  }, [fetchAllProducts]);
 
   return (
     <div className="min-h-[calc(100vh-4rem)] bg-slate-50">

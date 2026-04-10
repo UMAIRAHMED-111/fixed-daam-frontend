@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { getAllProducts } from "../data/productsData";
@@ -7,24 +7,35 @@ import { useCartStore } from "@/stores/cartStore";
 import { useOrdersStore } from "@/stores/ordersStore";
 import { QRCodeSVG } from "qrcode.react";
 import { toast } from "sonner";
+import { api } from "@/lib/api";
 
 export function ProductDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const inventoryProducts = useInventoryStore((s) => s.products);
   const allProducts = getAllProducts(inventoryProducts);
-  const product = allProducts.find((p) => p.id === id);
+  const [product, setProduct] = useState(() => allProducts.find((p) => p.id === id) ?? null);
   const [slideIndex, setSlideIndex] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [showOrderSuccess, setShowOrderSuccess] = useState(null);
+  const [orderLoading, setOrderLoading] = useState(false);
 
   const addItem = useCartStore((s) => s.addItem);
   const addOrder = useOrdersStore((s) => s.addOrder);
-  const clearCart = useCartStore((s) => s.clearCart);
+
+  // If product not found in local store, fetch it directly from the API
+  useEffect(() => {
+    if (!product && id) {
+      api
+        .get(`/v1/products/${id}`)
+        .then((res) => setProduct(res.data))
+        .catch(() => {});
+    }
+  }, [id, product]);
 
   if (!product) {
     return (
-      <div className="flex min-h-[60vh] items-center justify-center px-4">
+      <div className="flex min-h-[60vh] items-center justify-center px-4 gap-3">
         <p className="text-slate-600">Product not found.</p>
         <button
           type="button"
@@ -47,14 +58,17 @@ export function ProductDetailPage() {
     toast.success("Added to cart");
   };
 
-  const handleBuyNow = () => {
-    const order = addOrder({
-      items: [{ productId: product.id, name: product.name, price: product.price, quantity, merchantId: product.merchantId ?? null }],
-      total: product.price * quantity,
-      qrValue: `FIXED-${product.id}-${Date.now()}`,
-    });
-    setShowOrderSuccess(order);
-    toast.success("Order placed! Your price is locked.");
+  const handleBuyNow = async () => {
+    setOrderLoading(true);
+    try {
+      const order = await addOrder([{ productId: product.id, quantity }]);
+      setShowOrderSuccess(order);
+      toast.success("Order placed! Your price is locked.");
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to place order. Please try again.");
+    } finally {
+      setOrderLoading(false);
+    }
   };
 
   if (showOrderSuccess) {
@@ -134,9 +148,7 @@ export function ProductDetailPage() {
                         className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full p-2 -m-2 transition-colors touch-manipulation"
                         aria-label={`Go to image ${i + 1}`}
                       >
-                        <span className={`h-2 w-2 rounded-full block ${
-                          i === slideIndex ? "bg-primary" : "bg-slate-400"
-                        }`} />
+                        <span className={`h-2 w-2 rounded-full block ${i === slideIndex ? "bg-primary" : "bg-slate-400"}`} />
                       </button>
                     ))}
                   </div>
@@ -173,9 +185,10 @@ export function ProductDetailPage() {
               <button
                 type="button"
                 onClick={handleBuyNow}
-                className="min-h-[52px] flex-1 rounded-2xl bg-primary font-semibold text-white shadow-lg shadow-primary/25 hover:shadow-primary/35 hover:bg-orange-600 transition-all"
+                disabled={orderLoading}
+                className="min-h-[52px] flex-1 rounded-2xl bg-primary font-semibold text-white shadow-lg shadow-primary/25 hover:shadow-primary/35 hover:bg-orange-600 transition-all disabled:opacity-50"
               >
-                Buy now — lock price
+                {orderLoading ? "Placing order…" : "Buy now — lock price"}
               </button>
             </div>
           </div>

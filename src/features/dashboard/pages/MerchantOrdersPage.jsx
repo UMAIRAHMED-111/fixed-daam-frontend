@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { useEffect } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { useAuthStore } from "@/stores/authStore";
 import { useOrdersStore } from "@/stores/ordersStore";
@@ -20,19 +20,32 @@ function OrderStatusBadge({ status }) {
 
 export function MerchantOrdersPage() {
   const user = useAuthStore((s) => s.user);
-  const merchantId = user?.email;
+  const merchantId = user?.id;
   const orders = useOrdersStore((s) => s.getOrdersForMerchant(merchantId));
+  const fetchOrders = useOrdersStore((s) => s.fetchOrders);
   const markReady = useOrdersStore((s) => s.markReady);
   const markDelivered = useOrdersStore((s) => s.markDelivered);
 
-  const handleMarkReady = (orderId) => {
-    markReady(orderId);
-    toast.success("Order marked ready for pickup.");
+  useEffect(() => {
+    fetchOrders();
+  }, [fetchOrders]);
+
+  const handleMarkReady = async (orderId) => {
+    try {
+      await markReady(orderId);
+      toast.success("Order marked ready for pickup.");
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to update order");
+    }
   };
 
-  const handleMarkDelivered = (orderId) => {
-    markDelivered(orderId);
-    toast.success("Order marked delivered.");
+  const handleMarkDelivered = async (orderId) => {
+    try {
+      await markDelivered(orderId);
+      toast.success("Order marked delivered.");
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to update order");
+    }
   };
 
   if (user?.role !== "merchant") {

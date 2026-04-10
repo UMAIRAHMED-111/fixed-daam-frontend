@@ -1,49 +1,78 @@
 import { create } from "zustand";
+import { api } from "@/lib/api";
 
 /**
- * Merchant inventory. Product: { id, merchantId, merchantName, name, description, price, category, stock, images[], createdAt }
+ * Inventory store — backed by /v1/products API.
+ * Product shape: { id, merchantId, merchantName, name, description, price, category, stock, images[], isActive, createdAt }
  */
 export const useInventoryStore = create((set, get) => ({
   products: [],
+  loading: false,
 
-  addProduct: (payload) => {
-    const id = `inv-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-    const product = {
-      id,
-      merchantId: payload.merchantId,
-      merchantName: payload.merchantName,
+  /** Fetch all active products (buyer view) */
+  fetchAllProducts: async (params = {}) => {
+    set({ loading: true });
+    try {
+      const res = await api.get("/v1/products", { params });
+      const data = res.data;
+      set({ products: data.results ?? (Array.isArray(data) ? data : []) });
+    } catch {
+      // silent — seed data remains as fallback via productsData.js
+    } finally {
+      set({ loading: false });
+    }
+  },
+
+  /** Fetch all products belonging to a specific merchant */
+  fetchMerchantProducts: async (merchantId) => {
+    if (!merchantId) return;
+    set({ loading: true });
+    try {
+      const res = await api.get("/v1/products", { params: { merchantId } });
+      const data = res.data;
+      set({ products: data.results ?? (Array.isArray(data) ? data : []) });
+    } catch {
+      // silent
+    } finally {
+      set({ loading: false });
+    }
+  },
+
+  addProduct: async (payload) => {
+    const res = await api.post("/v1/products", {
       name: payload.name,
       description: payload.description ?? "",
       price: Number(payload.price),
       category: payload.category,
       stock: Math.max(0, Math.floor(Number(payload.stock) || 0)),
       images: Array.isArray(payload.images) ? payload.images.filter(Boolean) : [],
-      createdAt: new Date().toISOString(),
-    };
+    });
+    const product = res.data;
     set((state) => ({ products: [product, ...state.products] }));
     return product;
   },
 
-  updateProduct: (id, payload) =>
-    set((state) => ({
-      products: state.products.map((p) =>
-        p.id !== id
-          ? p
-          : {
-              ...p,
-              ...payload,
-              name: payload.name ?? p.name,
-              description: payload.description ?? p.description,
-              price: payload.price != null ? Number(payload.price) : p.price,
-              category: payload.category ?? p.category,
-              stock: payload.stock != null ? Math.max(0, Math.floor(Number(payload.stock))) : p.stock,
-              images: Array.isArray(payload.images) ? payload.images.filter(Boolean) : p.images,
-            }
-      ),
-    })),
+  updateProduct: async (id, payload) => {
+    const body = {};
+    if (payload.name !== undefined) body.name = payload.name;
+    if (payload.description !== undefined) body.description = payload.description;
+    if (payload.price != null) body.price = Number(payload.price);
+    if (payload.category !== undefined) body.category = payload.category;
+    if (payload.stock != null) body.stock = Math.max(0, Math.floor(Number(payload.stock)));
+    if (Array.isArray(payload.images)) body.images = payload.images.filter(Boolean);
 
-  removeProduct: (id) =>
-    set((state) => ({ products: state.products.filter((p) => p.id !== id) })),
+    const res = await api.patch(`/v1/products/${id}`, body);
+    const updated = res.data;
+    set((state) => ({
+      products: state.products.map((p) => (p.id !== id ? p : updated)),
+    }));
+    return updated;
+  },
+
+  removeProduct: async (id) => {
+    await api.delete(`/v1/products/${id}`);
+    set((state) => ({ products: state.products.filter((p) => p.id !== id) }));
+  },
 
   getByMerchant: (merchantId) =>
     get().products.filter((p) => p.merchantId === merchantId),

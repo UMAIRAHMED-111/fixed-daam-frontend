@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 import { useAuthStore } from "@/stores/authStore";
@@ -8,22 +8,34 @@ import { toast } from "sonner";
 export function MerchantInventoryPage() {
   const user = useAuthStore((s) => s.user);
   const navigate = useNavigate();
-  const merchantId = user?.email;
+  const merchantId = user?.id;
+  const fetchMerchantProducts = useInventoryStore((s) => s.fetchMerchantProducts);
   const products = useInventoryStore((s) => s.getByMerchant(merchantId));
   const removeProduct = useInventoryStore((s) => s.removeProduct);
   const [deletingId, setDeletingId] = useState(null);
+
+  useEffect(() => {
+    if (merchantId) {
+      fetchMerchantProducts(merchantId);
+    }
+  }, [merchantId, fetchMerchantProducts]);
 
   if (user?.role !== "merchant") {
     navigate("/dashboard", { replace: true });
     return null;
   }
 
-  const handleDelete = (id, name) => {
+  const handleDelete = async (id, name) => {
     if (!window.confirm(`Remove "${name}" from inventory?`)) return;
     setDeletingId(id);
-    removeProduct(id);
-    toast.success("Product removed");
-    setDeletingId(null);
+    try {
+      await removeProduct(id);
+      toast.success("Product removed");
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to remove product");
+    } finally {
+      setDeletingId(null);
+    }
   };
 
   return (

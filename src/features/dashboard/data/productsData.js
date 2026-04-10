@@ -1,4 +1,4 @@
-/** Mock products with relevant stock images (Lorem Flickr by keyword). */
+/** Seed products shown as fallback when the API returns no products. */
 
 const CATEGORIES = ["Electronics", "Groceries", "Home", "Fashion", "Sports"];
 
@@ -11,7 +11,6 @@ const PRODUCTS = [
     description: "Premium over-ear headphones with noise cancellation. 30-hour battery, comfortable for all-day use.",
     price: 89.99,
     category: "Electronics",
-    merchantName: "TechHub",
     stock: 24,
     images: [
       "https://loremflickr.com/800/600/headphones,wireless?lock=1",
@@ -41,22 +40,20 @@ const PRODUCTS = [
     description: "LED desk lamp with adjustable brightness and warm/cool light modes.",
     price: 45.0,
     category: "Home",
-    merchantName: "HomeStyle",
     stock: 42,
     images: [
       "https://loremflickr.com/800/600/desk,lamp?lock=1",
       "https://loremflickr.com/800/600/lamp,light?lock=2",
-      "https://loremflickr.com/800/600/desk,lamp,led?lock=3",
     ],
   },
   {
     id: "4",
     merchantId: null,
+    merchantName: "UrbanWear",
     name: "Cotton Crew Neck T-Shirt",
     description: "100% organic cotton, available in multiple colors. Classic fit.",
     price: 24.99,
     category: "Fashion",
-    merchantName: "UrbanWear",
     stock: 200,
     images: [
       "https://loremflickr.com/800/600/tshirt,cotton?lock=1",
@@ -66,92 +63,25 @@ const PRODUCTS = [
   {
     id: "5",
     merchantId: null,
+    merchantName: "RunFast",
     name: "Running Shoes Lightweight",
     description: "Breathable mesh upper, cushioned sole. Ideal for daily runs.",
     price: 79.99,
     category: "Sports",
-    merchantName: "RunFast",
     stock: 38,
     images: [
       "https://loremflickr.com/800/600/running,shoes?lock=1",
       "https://loremflickr.com/800/600/sneakers,shoes?lock=2",
-      "https://loremflickr.com/800/600/running,shoes,sport?lock=3",
-    ],
-  },
-  {
-    id: "6",
-    merchantId: null,
-    name: "Smart Watch Pro",
-    description: "Heart rate, GPS, 50m water resistant. 7-day battery.",
-    price: 199.99,
-    category: "Electronics",
-    merchantName: "TechHub",
-    stock: 15,
-    images: [
-      "https://loremflickr.com/800/600/smartwatch,watch?lock=1",
-      "https://loremflickr.com/800/600/smartwatch,wrist?lock=2",
-    ],
-  },
-  {
-    id: "7",
-    merchantId: null,
-    name: "Honey Jar 350g",
-    description: "Pure wildflower honey from local beekeepers. No additives.",
-    price: 8.99,
-    category: "Groceries",
-    merchantName: "FreshMart",
-    stock: 80,
-    images: [
-      "https://loremflickr.com/800/600/honey,jar?lock=1",
-    ],
-  },
-  {
-    id: "8",
-    merchantId: null,
-    name: "Throw Pillow Set of 2",
-    description: "Soft velvet cover, decorative for sofa or bed.",
-    price: 32.0,
-    category: "Home",
-    merchantName: "HomeStyle",
-    stock: 56,
-    images: [
-      "https://loremflickr.com/800/600/throw,pillow?lock=1",
-      "https://loremflickr.com/800/600/cushion,pillow,sofa?lock=2",
-    ],
-  },
-  {
-    id: "9",
-    merchantId: null,
-    name: "Yoga Mat Non-Slip",
-    description: "6mm thick, eco-friendly TPE material. Includes carry strap.",
-    price: 29.99,
-    category: "Sports",
-    merchantName: "RunFast",
-    stock: 90,
-    images: [
-      "https://loremflickr.com/800/600/yoga,mat?lock=1",
-      "https://loremflickr.com/800/600/yoga,mat,fitness?lock=2",
-    ],
-  },
-  {
-    id: "10",
-    merchantId: null,
-    name: "Denim Jacket Classic",
-    description: "Medium wash denim, durable and timeless style.",
-    price: 69.99,
-    category: "Fashion",
-    merchantName: "UrbanWear",
-    stock: 28,
-    images: [
-      "https://loremflickr.com/800/600/denim,jacket?lock=1",
-      "https://loremflickr.com/800/600/denim,jacket,clothing?lock=2",
     ],
   },
 ];
 
-/** All products for buyers: seed PRODUCTS + merchant inventory. */
-export function getAllProducts(inventoryProducts = []) {
-  return [...PRODUCTS, ...inventoryProducts];
+/**
+ * All products for buyers.
+ * Returns API products when available; falls back to seed data when the backend is offline.
+ */
+export function getAllProducts(apiProducts = []) {
+  return apiProducts.length > 0 ? apiProducts : PRODUCTS;
 }
 
 export { PRODUCTS, CATEGORIES };

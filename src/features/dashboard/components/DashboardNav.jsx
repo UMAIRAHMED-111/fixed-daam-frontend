@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { ShoppingCart, Package, Menu } from "lucide-react";
+import { ShoppingCart, Package, Menu, UserCircle } from "lucide-react";
 import { useAuthStore } from "@/stores/authStore";
 import { useCartStore } from "@/stores/cartStore";
 import { Button } from "@/components/ui/Button";
@@ -20,6 +20,7 @@ export function DashboardNav() {
   const location = useLocation();
   const isOrders = location.pathname === "/dashboard/orders";
   const isInventory = location.pathname.startsWith("/dashboard/inventory");
+  const isProfile = location.pathname === "/dashboard/profile";
 
   const closeMobileMenu = () => setMobileMenuOpen(false);
 
@@ -70,7 +71,16 @@ export function DashboardNav() {
               )}
             </button>
             )}
-            <span className="hidden text-sm text-slate-600 sm:inline">{email}</span>
+            <Link
+              to="/dashboard/profile"
+              className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-lg transition ${
+                isProfile ? "text-primary bg-primary/10" : "text-slate-600 hover:bg-slate-100"
+              }`}
+              aria-label="Your profile"
+              title={email}
+            >
+              <UserCircle className="h-5 w-5" />
+            </Link>
             <Button
               variant="secondary"
               className="min-h-[44px] shrink-0 border-slate-300 text-slate-700"
@@ -138,6 +148,16 @@ export function DashboardNav() {
                 >
                   <Package className="h-4 w-4" />
                   Orders
+                </Link>
+                <Link
+                  to="/dashboard/profile"
+                  onClick={closeMobileMenu}
+                  className={`min-h-[44px] flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium ${
+                    isProfile ? "bg-primary/10 text-primary" : "text-slate-700 hover:bg-slate-50"
+                  }`}
+                >
+                  <UserCircle className="h-4 w-4" />
+                  Profile
                 </Link>
                 <div className="min-h-[44px] flex items-center px-3 py-2.5 text-sm text-slate-500">
                   {email}
