@@ -17,7 +17,7 @@ export const useInventoryStore = create((set, get) => ({
       const data = res.data;
       set({ products: data.results ?? (Array.isArray(data) ? data : []) });
     } catch {
-      // silent — seed data remains as fallback via productsData.js
+      // silent
     } finally {
       set({ loading: false });
     }

@@ -1,11 +1,9 @@
 import { useMemo } from "react";
 import { ProductCard } from "./ProductCard";
-import { getAllProducts } from "../data/productsData";
 import { useInventoryStore } from "@/stores/inventoryStore";
 
 export function ProductGrid({ search, category, priceMin, priceMax }) {
-  const inventoryProducts = useInventoryStore((s) => s.products);
-  const allProducts = useMemo(() => getAllProducts(inventoryProducts), [inventoryProducts]);
+  const allProducts = useInventoryStore((s) => s.products);
 
   const filtered = useMemo(() => {
     let list = [...allProducts];

@@ -6,15 +6,10 @@ const baseURL = import.meta.env.VITE_API_BASE_URL || "";
 export const api = axios.create({
   baseURL,
   headers: { "Content-Type": "application/json" },
+  withCredentials: true, // send HttpOnly auth cookies automatically on every request
 });
 
-api.interceptors.request.use((config) => {
-  const token = useAuthStore.getState().token;
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
+// No Authorization header needed — the browser attaches the accessToken cookie.
 
 api.interceptors.response.use(
   (response) => response,

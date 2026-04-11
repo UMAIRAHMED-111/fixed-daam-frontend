@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { getAllProducts } from "../data/productsData";
 import { useInventoryStore } from "@/stores/inventoryStore";
 import { useCartStore } from "@/stores/cartStore";
 import { useOrdersStore } from "@/stores/ordersStore";
@@ -13,8 +12,7 @@ export function ProductDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const inventoryProducts = useInventoryStore((s) => s.products);
-  const allProducts = getAllProducts(inventoryProducts);
-  const [product, setProduct] = useState(() => allProducts.find((p) => p.id === id) ?? null);
+  const [product, setProduct] = useState(() => inventoryProducts.find((p) => p.id === id) ?? null);
   const [slideIndex, setSlideIndex] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [showOrderSuccess, setShowOrderSuccess] = useState(null);
