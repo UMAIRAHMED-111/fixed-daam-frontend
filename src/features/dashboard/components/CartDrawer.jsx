@@ -14,21 +14,27 @@ export function CartDrawer({ open, onClose }) {
   const addOrder = useOrdersStore((s) => s.addOrder);
   const [checkingOut, setCheckingOut] = useState(false);
   const [lastOrder, setLastOrder] = useState(null);
+  const [isPlacing, setIsPlacing] = useState(false);
 
   const totalItems = items.reduce((s, i) => s + i.quantity, 0);
   const totalAmount = items.reduce((s, i) => s + i.price * i.quantity, 0);
 
-  const handleCheckout = () => {
-    if (items.length === 0) return;
-    const order = addOrder({
-      items: items.map((i) => ({ productId: i.productId, name: i.name, price: i.price, quantity: i.quantity, merchantId: i.merchantId ?? null })),
-      total: totalAmount,
-      qrValue: `FIXED-CART-${Date.now()}`,
-    });
-    setLastOrder(order);
-    clearCart();
-    setCheckingOut(true);
-    toast.success("Order placed! Your price is locked.");
+  const handleCheckout = async () => {
+    if (items.length === 0 || isPlacing) return;
+    setIsPlacing(true);
+    try {
+      const order = await addOrder(
+        items.map((i) => ({ productId: i.productId, quantity: i.quantity }))
+      );
+      setLastOrder(order);
+      clearCart();
+      setCheckingOut(true);
+      toast.success("Order placed! Your price is locked.");
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Checkout failed. Please try again.");
+    } finally {
+      setIsPlacing(false);
+    }
   };
 
   const closeAndReset = () => {
@@ -119,9 +125,10 @@ export function CartDrawer({ open, onClose }) {
             <button
               type="button"
               onClick={handleCheckout}
-              className="mt-4 w-full min-h-[52px] rounded-2xl bg-primary font-semibold text-white shadow-lg shadow-primary/25 hover:shadow-primary/35 hover:bg-orange-600 transition-all"
+              disabled={isPlacing}
+              className="mt-4 w-full min-h-[52px] rounded-2xl bg-primary font-semibold text-white shadow-lg shadow-primary/25 hover:shadow-primary/35 hover:bg-orange-600 transition-all disabled:opacity-50"
             >
-              Buy now — lock price
+              {isPlacing ? "Placing order…" : "Buy now — lock price"}
             </button>
           </div>
         )}

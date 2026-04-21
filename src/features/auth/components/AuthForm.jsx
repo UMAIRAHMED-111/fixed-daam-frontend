@@ -11,6 +11,7 @@ import { PasswordStrengthMeter } from "./PasswordStrengthMeter";
 import { loginSchema, buyerSignUpSchema, merchantSignUpSchema } from "../schemas/authSchemas";
 import { useAuthStore } from "@/stores/authStore";
 import { api } from "@/lib/api";
+import { Dialog } from "@/components/ui/Dialog";
 
 const GOOGLE_ICON = (
   <svg className="h-5 w-5" viewBox="0 0 24 24" aria-hidden>
@@ -29,6 +30,8 @@ export function AuthForm({ authType = "buyer" }) {
   const isMerchant = authType === "merchant";
   const from = location.state?.from?.pathname;
   const [isSignUp, setIsSignUp] = useState(false);
+  const [showVerifyModal, setShowVerifyModal] = useState(false);
+  const [registeredEmail, setRegisteredEmail] = useState("");
 
   const role = isMerchant ? "merchant" : "buyer";
 
@@ -97,10 +100,10 @@ export function AuthForm({ authType = "buyer" }) {
         body.name = cleaned.name;
       }
       await api.post("/v1/auth/register", body);
-      toast.success("Account created! Please check your email to verify your account, then sign in.");
       signUpForm.reset();
-      switchToSignIn();
+      setRegisteredEmail(cleaned.email);
       loginForm.setValue("email", cleaned.email);
+      setShowVerifyModal(true);
     } catch (err) {
       const message = err.response?.data?.message || "Something went wrong. Please try again.";
       toast.error(message);
@@ -117,8 +120,40 @@ export function AuthForm({ authType = "buyer" }) {
     }
   };
 
+  const handleVerifyModalClose = () => {
+    setShowVerifyModal(false);
+    switchToSignIn();
+  };
+
   return (
     <>
+      <Dialog open={showVerifyModal} onOpenChange={handleVerifyModalClose}>
+        <Dialog.Header>
+          <div className="flex items-center justify-center mb-4">
+            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-orange-50 text-primary">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25H4.5A2.25 2.25 0 012.25 17.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5H4.5A2.25 2.25 0 002.25 6.75m19.5 0l-9.75 6.75L2.25 6.75" />
+              </svg>
+            </div>
+          </div>
+          <Dialog.Title className="text-center text-xl">Check your inbox</Dialog.Title>
+        </Dialog.Header>
+        <Dialog.Description className="text-center mb-1">
+          We sent a verification link to
+        </Dialog.Description>
+        <p className="text-center font-semibold text-slate-800 text-sm mb-4 break-all">{registeredEmail}</p>
+        <p className="text-center text-sm text-muted-foreground mb-6">
+          Click the link in the email to verify your account. Once verified, you can sign in.
+        </p>
+        <button
+          type="button"
+          onClick={handleVerifyModalClose}
+          className="w-full min-h-[48px] inline-flex items-center justify-center rounded-xl bg-primary px-4 text-sm font-semibold text-white shadow-lg shadow-primary/25 hover:bg-orange-600 transition-colors touch-manipulation"
+        >
+          Got it, go to sign in
+        </button>
+      </Dialog>
+
       {/* SSO */}
       <div className="space-y-3">
         {googleUrl ? (

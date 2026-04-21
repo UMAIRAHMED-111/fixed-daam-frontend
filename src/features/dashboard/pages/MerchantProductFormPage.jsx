@@ -10,6 +10,7 @@ import { useAuthStore } from "@/stores/authStore";
 import { useInventoryStore } from "@/stores/inventoryStore";
 import { productFormSchema, parseImageUrls } from "../schemas/productSchema";
 import { CATEGORIES } from "../data/productsData";
+import { SAMPLE_IMAGES, DEFAULT_SAMPLE_IMAGES } from "../data/sampleImages";
 
 export function MerchantProductFormPage() {
   const { id } = useParams();
@@ -66,6 +67,15 @@ export function MerchantProductFormPage() {
       </div>
     );
   }
+
+  const selectedCategory = form.watch("category");
+  const sampleImages = SAMPLE_IMAGES[selectedCategory] ?? DEFAULT_SAMPLE_IMAGES;
+
+  const appendSampleImage = (url) => {
+    const current = form.getValues("imageUrls") ?? "";
+    const trimmed = current.trim();
+    form.setValue("imageUrls", trimmed ? `${trimmed}\n${url}` : url);
+  };
 
   const onSubmit = async (data) => {
     const images = parseImageUrls(data.imageUrls);
@@ -154,6 +164,27 @@ export function MerchantProductFormPage() {
               {...form.register("imageUrls")}
             />
           </FormField>
+
+          <div>
+            <p className="mb-2 text-sm font-medium text-slate-700">
+              Sample images
+              {selectedCategory ? ` · ${selectedCategory}` : ""}
+              <span className="ml-1.5 text-xs font-normal text-slate-400">tap to add URL</span>
+            </p>
+            <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
+              {sampleImages.map((url) => (
+                <button
+                  key={url}
+                  type="button"
+                  onClick={() => appendSampleImage(url)}
+                  className="aspect-video overflow-hidden rounded-lg border-2 border-slate-200 hover:border-primary focus:outline-none focus:border-primary transition-colors touch-manipulation"
+                  title="Click to add this image URL"
+                >
+                  <img src={url} alt="" className="h-full w-full object-cover" loading="lazy" />
+                </button>
+              ))}
+            </div>
+          </div>
           <div className="flex gap-3 pt-4">
             <button
               type="submit"

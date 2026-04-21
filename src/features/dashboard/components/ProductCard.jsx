@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 
 export function ProductCard({ product }) {
-  const image = product.images?.[0] ?? product.image;
+  const image = product.images?.[0] ?? product.image ?? `https://picsum.photos/seed/${product.id}/400/400`;
 
   return (
     <Link
