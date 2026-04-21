@@ -73,8 +73,8 @@ export function AuthForm({ authType = "buyer" }) {
         password: cleaned.password,
         role,
       });
-      const { user, accessToken } = res.data;
-      login(user, accessToken);
+      const { user } = res.data;
+      login(user);
       loginForm.reset();
       let target = from && from !== "/auth" ? from : "/dashboard";
       if (!isMerchant && target.startsWith("/dashboard/inventory")) target = "/dashboard";

@@ -1,21 +1,11 @@
 import axios from "axios";
-import { useAuthStore } from "@/stores/authStore";
 
 const baseURL = import.meta.env.VITE_API_BASE_URL || "";
 
 export const api = axios.create({
   baseURL,
   headers: { "Content-Type": "application/json" },
-  withCredentials: true,
-});
-
-// Attach access token as Authorization header on every request
-api.interceptors.request.use((config) => {
-  const token = useAuthStore.getState().accessToken;
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
+  withCredentials: true, // send HttpOnly auth cookies automatically on every request
 });
 
 let isRefreshing = false;
@@ -26,6 +16,7 @@ const flushQueue = (error) => {
   waitQueue = [];
 };
 
+// On 401: silently refresh the access token then retry. Only logout if refresh itself fails.
 api.interceptors.response.use(
   (res) => res,
   async (error) => {
@@ -46,12 +37,14 @@ api.interceptors.response.use(
       isRefreshing = true;
 
       try {
-        const refreshRes = await api.post("/v1/auth/refresh-tokens");
-        useAuthStore.getState().setAccessToken(refreshRes.data.accessToken);
+        // Refresh sets new HttpOnly accessToken + refreshToken cookies server-side.
+        // No token data needed in JS — the browser handles cookies automatically.
+        await api.post("/v1/auth/refresh-tokens");
         flushQueue(null);
         return api(original);
       } catch (refreshError) {
         flushQueue(refreshError);
+        const { useAuthStore } = await import("@/stores/authStore");
         useAuthStore.getState().logout();
         return Promise.reject(refreshError);
       } finally {

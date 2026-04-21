@@ -20,16 +20,15 @@ export const useAuthStore = create(
     (set) => ({
       user: null,
       isAuthenticated: false,
-      accessToken: null, // in-memory only — not persisted, restored via silent refresh on reload
 
-      login: (userData, accessToken) => {
+      login: (userData) => {
         const user = {
           ...userData,
           storeName:
             userData.storeName ??
             (userData.role === "merchant" ? (userData.name ?? "My Store") : undefined),
         };
-        set({ user, isAuthenticated: true, accessToken: accessToken ?? null });
+        set({ user, isAuthenticated: true });
       },
 
       logout: async () => {
@@ -40,10 +39,8 @@ export const useAuthStore = create(
           headers: { "Content-Type": "application/json" },
         }).catch(() => {});
         Object.keys(Cookies.get()).forEach((name) => Cookies.remove(name));
-        set({ user: null, isAuthenticated: false, accessToken: null });
+        set({ user: null, isAuthenticated: false });
       },
-
-      setAccessToken: (token) => set({ accessToken: token }),
 
       setStoreName: (storeName) =>
         set((state) => ({
@@ -60,11 +57,6 @@ export const useAuthStore = create(
           return { user: merged };
         }),
     }),
-    {
-      name: COOKIE_NAME,
-      storage: cookieStorage,
-      // Only persist session identity — accessToken is in-memory and restored on reload via /auth/refresh-tokens
-      partialize: (state) => ({ user: state.user, isAuthenticated: state.isAuthenticated }),
-    }
+    { name: COOKIE_NAME, storage: cookieStorage }
   )
 );
