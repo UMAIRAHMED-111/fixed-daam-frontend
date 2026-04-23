@@ -155,7 +155,7 @@ export function MerchantProductFormPage() {
             </select>
           </FormField>
           <div className="grid gap-4 sm:grid-cols-2">
-            <FormField label="Price ($)" required error={form.formState.errors.price?.message} id="price">
+            <FormField label="Price (PKR)" required error={form.formState.errors.price?.message} id="price">
               <Input type="number" step="0.01" min={0} placeholder="0.00" {...form.register("price")} />
             </FormField>
             <FormField label="Stock" required error={form.formState.errors.stock?.message} id="stock">

@@ -88,7 +88,7 @@ export function MerchantInventoryPage() {
                   <h3 className="mt-1 font-semibold text-slate-900 line-clamp-2">{p.name}</h3>
                   <p className="mt-1 text-sm text-slate-600 line-clamp-2">{p.description || "—"}</p>
                   <p className="mt-auto pt-3 text-lg font-bold text-slate-900">
-                    ${Number(p.price).toFixed(2)}
+                    PKR {Number(p.price).toFixed(2)}
                   </p>
                   <p className="text-sm text-slate-500">Stock: {p.stock}</p>
                   <div className="mt-3 flex gap-2">

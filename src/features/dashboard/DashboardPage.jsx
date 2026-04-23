@@ -1,10 +1,7 @@
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useAuthStore } from "@/stores/authStore";
 import { BuyerProductsPage } from "./pages/BuyerProductsPage";
-import { ProductDetailPage } from "./pages/ProductDetailPage";
 import { BuyerOrdersPage } from "./pages/BuyerOrdersPage";
-import { MerchantInventoryPage } from "./pages/MerchantInventoryPage";
-import { MerchantProductFormPage } from "./pages/MerchantProductFormPage";
 import { MerchantOrdersPage } from "./pages/MerchantOrdersPage";
 
 export function DashboardPage() {

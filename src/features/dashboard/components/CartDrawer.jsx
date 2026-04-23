@@ -1,9 +1,8 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Link } from "react-router-dom";
-import { X } from "lucide-react";
+import { X, Upload, ImageIcon } from "lucide-react";
 import { useCartStore } from "@/stores/cartStore";
 import { useOrdersStore } from "@/stores/ordersStore";
-import { QRCodeSVG } from "qrcode.react";
 import { toast } from "sonner";
 
 export function CartDrawer({ open, onClose }) {
@@ -15,19 +14,36 @@ export function CartDrawer({ open, onClose }) {
   const [checkingOut, setCheckingOut] = useState(false);
   const [lastOrder, setLastOrder] = useState(null);
   const [isPlacing, setIsPlacing] = useState(false);
+  const [paymentFile, setPaymentFile] = useState(null);
+  const [paymentPreview, setPaymentPreview] = useState(null);
+  const fileInputRef = useRef(null);
 
   const totalItems = items.reduce((s, i) => s + i.quantity, 0);
   const totalAmount = items.reduce((s, i) => s + i.price * i.quantity, 0);
 
+  const handleFileChange = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setPaymentFile(file);
+    setPaymentPreview(URL.createObjectURL(file));
+  };
+
   const handleCheckout = async () => {
     if (items.length === 0 || isPlacing) return;
+    if (!paymentFile) {
+      toast.error("Please upload your proof of payment before placing the order.");
+      return;
+    }
     setIsPlacing(true);
     try {
       const order = await addOrder(
-        items.map((i) => ({ productId: i.productId, quantity: i.quantity }))
+        items.map((i) => ({ productId: i.productId, quantity: i.quantity })),
+        paymentFile
       );
       setLastOrder(order);
       clearCart();
+      setPaymentFile(null);
+      setPaymentPreview(null);
       setCheckingOut(true);
       toast.success("Order placed! Your price is locked.");
     } catch (err) {
@@ -40,6 +56,8 @@ export function CartDrawer({ open, onClose }) {
   const closeAndReset = () => {
     setLastOrder(null);
     setCheckingOut(false);
+    setPaymentFile(null);
+    setPaymentPreview(null);
     onClose();
   };
 
@@ -66,12 +84,14 @@ export function CartDrawer({ open, onClose }) {
         </div>
         <div className="flex-1 overflow-y-auto p-4 pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))]">
           {checkingOut && lastOrder ? (
-            <div className="text-center py-6">
-              <h3 className="font-semibold text-slate-900">Order confirmed</h3>
-              <p className="mt-2 text-sm text-slate-600">Use this QR code to collect your order.</p>
-              <div className="mt-4 flex justify-center">
-                <QRCodeSVG value={lastOrder.qrValue} size={180} className="rounded-lg border border-slate-200 p-2 bg-white" />
+            <div className="text-center py-6 px-2">
+              <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-amber-100">
+                <span className="text-2xl">⏳</span>
               </div>
+              <h3 className="font-semibold text-slate-900">Order submitted!</h3>
+              <p className="mt-2 text-sm text-slate-600">
+                Your payment proof is under review. We'll notify you once it's verified (usually within 2–3 days). Your price is locked in.
+              </p>
               <Link
                 to="/dashboard/orders"
                 onClick={closeAndReset}
@@ -93,7 +113,7 @@ export function CartDrawer({ open, onClose }) {
                   />
                   <div className="min-w-0 flex-1">
                     <p className="font-medium text-slate-900 truncate">{item.name}</p>
-                    <p className="text-sm text-slate-600">${Number(item.price).toFixed(2)} each</p>
+                    <p className="text-sm text-slate-600">PKR {Number(item.price).toFixed(2)} each</p>
                     <div className="mt-2 flex items-center gap-2">
                       <input
                         type="number"
@@ -117,16 +137,53 @@ export function CartDrawer({ open, onClose }) {
           )}
         </div>
         {!checkingOut && items.length > 0 && (
-          <div className="border-t border-slate-200 p-4 pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] pb-[max(1rem,env(safe-area-inset-bottom))]">
+          <div className="border-t border-slate-200 p-4 pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] pb-[max(1rem,env(safe-area-inset-bottom))] space-y-4">
             <p className="flex justify-between text-sm font-semibold text-slate-900">
               <span>Total</span>
-              <span>${totalAmount.toFixed(2)}</span>
+              <span>PKR {totalAmount.toFixed(2)}</span>
             </p>
+            {/* Payment proof upload */}
+            <div>
+              <p className="text-xs font-medium text-slate-700 mb-2">Proof of payment <span className="text-red-500">*</span></p>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleFileChange}
+              />
+              {paymentPreview ? (
+                <div className="relative">
+                  <img
+                    src={paymentPreview}
+                    alt="Payment proof preview"
+                    className="w-full max-h-36 object-contain rounded-lg border border-slate-200 bg-slate-50"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => { setPaymentFile(null); setPaymentPreview(null); fileInputRef.current.value = ""; }}
+                    className="absolute top-1 right-1 flex h-7 w-7 items-center justify-center rounded-full bg-white shadow text-slate-500 hover:text-red-600"
+                    aria-label="Remove proof"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-300 py-3 text-sm font-medium text-slate-500 hover:border-primary hover:text-primary transition-colors"
+                >
+                  <Upload className="h-4 w-4" />
+                  Upload screenshot
+                </button>
+              )}
+            </div>
             <button
               type="button"
               onClick={handleCheckout}
-              disabled={isPlacing}
-              className="mt-4 w-full min-h-[52px] rounded-2xl bg-primary font-semibold text-white shadow-lg shadow-primary/25 hover:shadow-primary/35 hover:bg-orange-600 transition-all disabled:opacity-50"
+              disabled={isPlacing || !paymentFile}
+              className="w-full min-h-[52px] rounded-2xl bg-primary font-semibold text-white shadow-lg shadow-primary/25 hover:shadow-primary/35 hover:bg-orange-600 transition-all disabled:opacity-50"
             >
               {isPlacing ? "Placing order…" : "Buy now — lock price"}
             </button>

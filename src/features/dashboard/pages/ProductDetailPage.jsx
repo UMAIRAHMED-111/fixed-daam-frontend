@@ -1,10 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Upload, X } from "lucide-react";
 import { useInventoryStore } from "@/stores/inventoryStore";
 import { useCartStore } from "@/stores/cartStore";
 import { useOrdersStore } from "@/stores/ordersStore";
-import { QRCodeSVG } from "qrcode.react";
 import { toast } from "sonner";
 import { api } from "@/lib/api";
 
@@ -17,6 +16,9 @@ export function ProductDetailPage() {
   const [quantity, setQuantity] = useState(1);
   const [showOrderSuccess, setShowOrderSuccess] = useState(null);
   const [orderLoading, setOrderLoading] = useState(false);
+  const [paymentFile, setPaymentFile] = useState(null);
+  const [paymentPreview, setPaymentPreview] = useState(null);
+  const fileInputRef = useRef(null);
 
   const addItem = useCartStore((s) => s.addItem);
   const addOrder = useOrdersStore((s) => s.addOrder);
@@ -56,10 +58,21 @@ export function ProductDetailPage() {
     toast.success("Added to cart");
   };
 
+  const handleFileChange = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setPaymentFile(file);
+    setPaymentPreview(URL.createObjectURL(file));
+  };
+
   const handleBuyNow = async () => {
+    if (!paymentFile) {
+      toast.error("Please upload your proof of payment before placing the order.");
+      return;
+    }
     setOrderLoading(true);
     try {
-      const order = await addOrder([{ productId: product.id, quantity }]);
+      const order = await addOrder([{ productId: product.id, quantity }], paymentFile);
       setShowOrderSuccess(order);
       toast.success("Order placed! Your price is locked.");
     } catch (err) {
@@ -73,18 +86,20 @@ export function ProductDetailPage() {
     return (
       <div className="mx-auto max-w-lg px-4 py-12">
         <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-lg text-center">
-          <h2 className="text-xl font-bold text-slate-900">Order confirmed</h2>
-          <p className="mt-2 text-slate-600">Your price is locked. Use this QR code to collect your order.</p>
-          <div className="mt-6 flex justify-center">
-            <QRCodeSVG value={showOrderSuccess.qrValue} size={200} className="rounded-lg border border-slate-200 p-2 bg-white" />
+          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-amber-100">
+            <span className="text-3xl">⏳</span>
           </div>
+          <h2 className="text-xl font-bold text-slate-900">Order submitted!</h2>
+          <p className="mt-2 text-slate-600">
+            Your payment proof is under review. We'll notify you once it's verified (usually within 2–3 days). Your price is locked in.
+          </p>
           <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
             <button
               type="button"
               onClick={() => navigate("/dashboard/orders")}
               className="min-h-[48px] rounded-2xl bg-primary px-6 font-semibold text-white shadow-lg shadow-primary/25 hover:shadow-primary/35 hover:bg-orange-600 transition-all"
             >
-              View all orders
+              View my orders
             </button>
             <button
               type="button"
@@ -159,7 +174,7 @@ export function ProductDetailPage() {
             <span className="text-sm font-medium text-primary">{product.category}</span>
             <h1 className="mt-1 text-2xl font-bold text-slate-900 sm:text-3xl">{product.name}</h1>
             <p className="mt-2 text-slate-600">{product.description}</p>
-            <p className="mt-4 text-2xl font-bold text-slate-900">${Number(product.price).toFixed(2)}</p>
+            <p className="mt-4 text-2xl font-bold text-slate-900">PKR {Number(product.price).toFixed(2)}</p>
             <p className="mt-1 text-sm text-slate-500">Sold by {product.merchantName ?? "Store"}</p>
             <div className="mt-6 flex items-center gap-4">
               <label className="text-sm font-medium text-slate-700">Quantity</label>
@@ -172,7 +187,47 @@ export function ProductDetailPage() {
                 className="w-20 min-h-[44px] rounded-lg border border-slate-200 px-3 py-2 text-center text-base focus:outline-none focus:ring-2 focus:ring-primary touch-manipulation"
               />
             </div>
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+            {/* Payment proof */}
+            <div className="mt-6">
+              <p className="text-sm font-medium text-slate-700 mb-2">
+                Proof of payment <span className="text-red-500">*</span>
+                <span className="ml-1 text-xs font-normal text-slate-500">(required to place order)</span>
+              </p>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleFileChange}
+              />
+              {paymentPreview ? (
+                <div className="relative inline-block">
+                  <img
+                    src={paymentPreview}
+                    alt="Payment proof preview"
+                    className="max-h-40 max-w-full rounded-xl border border-slate-200 object-contain bg-slate-50"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => { setPaymentFile(null); setPaymentPreview(null); fileInputRef.current.value = ""; }}
+                    className="absolute top-1 right-1 flex h-7 w-7 items-center justify-center rounded-full bg-white shadow text-slate-500 hover:text-red-600"
+                    aria-label="Remove proof"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-300 py-4 text-sm font-medium text-slate-500 hover:border-primary hover:text-primary transition-colors"
+                >
+                  <Upload className="h-4 w-4" />
+                  Upload payment screenshot
+                </button>
+              )}
+            </div>
+            <div className="mt-4 flex flex-col gap-3 sm:flex-row">
               <button
                 type="button"
                 onClick={handleAddToCart}
@@ -183,7 +238,7 @@ export function ProductDetailPage() {
               <button
                 type="button"
                 onClick={handleBuyNow}
-                disabled={orderLoading}
+                disabled={orderLoading || !paymentFile}
                 className="min-h-[52px] flex-1 rounded-2xl bg-primary font-semibold text-white shadow-lg shadow-primary/25 hover:shadow-primary/35 hover:bg-orange-600 transition-all disabled:opacity-50"
               >
                 {orderLoading ? "Placing order…" : "Buy now — lock price"}

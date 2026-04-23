@@ -24,15 +24,37 @@ export const useOrdersStore = create((set, get) => ({
   },
 
   /**
-   * Create a new order from cart items.
+   * Create a new order from cart items with a proof-of-payment image.
    * @param {Array<{productId: string, quantity: number}>} cartItems
+   * @param {File} paymentProofFile
    * @returns {Promise<Order>}
    */
-  addOrder: async (cartItems) => {
-    const res = await api.post("/v1/orders", { items: cartItems });
+  addOrder: async (cartItems, paymentProofFile) => {
+    const formData = new FormData();
+    formData.append("items", JSON.stringify(cartItems));
+    if (paymentProofFile) {
+      formData.append("paymentProof", paymentProofFile);
+    }
+    const res = await api.post("/v1/orders", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
     const order = res.data;
     set((state) => ({ orders: [order, ...state.orders] }));
     return order;
+  },
+
+  approveOrder: async (orderId) => {
+    const res = await api.patch(`/v1/orders/${orderId}/verify`, { action: "approve" });
+    const updated = res.data;
+    set((state) => ({ orders: state.orders.map((o) => (o.id === orderId ? updated : o)) }));
+    return updated;
+  },
+
+  rejectOrder: async (orderId, note) => {
+    const res = await api.patch(`/v1/orders/${orderId}/verify`, { action: "reject", note });
+    const updated = res.data;
+    set((state) => ({ orders: state.orders.map((o) => (o.id === orderId ? updated : o)) }));
+    return updated;
   },
 
   markReady: async (orderId) => {

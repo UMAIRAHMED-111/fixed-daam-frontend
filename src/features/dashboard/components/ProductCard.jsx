@@ -22,7 +22,7 @@ export function ProductCard({ product }) {
         </h3>
         <p className="mt-1 text-sm text-slate-600 line-clamp-2">{product.description}</p>
         <p className="mt-auto pt-3 text-lg font-bold text-slate-900">
-          ${Number(product.price).toFixed(2)}
+          PKR {Number(product.price).toFixed(2)}
         </p>
       </div>
     </Link>

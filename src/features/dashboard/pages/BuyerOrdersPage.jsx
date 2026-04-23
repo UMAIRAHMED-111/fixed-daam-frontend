@@ -6,9 +6,11 @@ import { OrderCard } from "../components/OrderCard";
 
 const STATUS_TABS = [
   { id: "all", label: "All orders" },
+  { id: "pending_verification", label: "Pending" },
   { id: "locked", label: "Preparing" },
   { id: "ready", label: "Ready for pickup" },
   { id: "delivered", label: "Delivered" },
+  { id: "rejected", label: "Rejected" },
 ];
 
 export function BuyerOrdersPage() {
@@ -26,9 +28,11 @@ export function BuyerOrdersPage() {
   const counts = useMemo(
     () => ({
       all: orders.length,
+      pending_verification: orders.filter((o) => o.status === "pending_verification").length,
       locked: orders.filter((o) => o.status === "locked").length,
       ready: orders.filter((o) => o.status === "ready").length,
       delivered: orders.filter((o) => o.status === "delivered").length,
+      rejected: orders.filter((o) => o.status === "rejected").length,
     }),
     [orders]
   );
@@ -108,9 +112,30 @@ export function BuyerOrdersPage() {
           ))}
         </div>
 
+        {/* Pending verification banner */}
+        {counts.pending_verification > 0 && (
+          <div className="mb-3 flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+            <span className="inline-block h-2 w-2 shrink-0 rounded-full bg-amber-400 animate-pulse" />
+            <span>
+              <strong>{counts.pending_verification}</strong> order{counts.pending_verification > 1 ? "s are" : " is"} awaiting
+              payment verification (2–3 days).
+            </span>
+          </div>
+        )}
+
+        {/* Rejected banner */}
+        {counts.rejected > 0 && (
+          <div className="mb-3 flex items-center gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+            <span className="inline-block h-2 w-2 shrink-0 rounded-full bg-red-500" />
+            <span>
+              <strong>{counts.rejected}</strong> order{counts.rejected > 1 ? "s were" : " was"} rejected — check the Rejected tab for details.
+            </span>
+          </div>
+        )}
+
         {/* Ready alert banner */}
         {counts.ready > 0 && (
-          <div className="mb-5 flex items-center gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+          <div className="mb-3 flex items-center gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
             <span className="inline-block h-2 w-2 shrink-0 rounded-full bg-emerald-500 animate-pulse" />
             <span>
               <strong>{counts.ready}</strong> order{counts.ready > 1 ? "s are" : " is"} ready for
