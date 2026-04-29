@@ -1,6 +1,5 @@
 import { useEffect, useState, useMemo, useCallback } from "react";
-import { Search, Package, Clock, CheckCircle2, Truck, XCircle } from "lucide-react";
-import { QRCodeSVG } from "qrcode.react";
+import { Search, Package, Clock, CheckCircle2, Truck, XCircle, KeyRound } from "lucide-react";
 import { useAuthStore } from "@/stores/authStore";
 import { useOrdersStore } from "@/stores/ordersStore";
 import { toast } from "sonner";
@@ -42,12 +41,19 @@ export function MerchantOrdersPage() {
   const rejectOrder = useOrdersStore((s) => s.rejectOrder);
   const loading = useOrdersStore((s) => s.loading);
 
+  const validateCode = useOrdersStore((s) => s.validateCode);
+
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [actionLoading, setActionLoading] = useState(null);
   const [rejectingId, setRejectingId] = useState(null);
   const [rejectionNote, setRejectionNote] = useState("");
   const [lightboxSrc, setLightboxSrc] = useState(null);
+
+  const [codeInput, setCodeInput] = useState("");
+  const [codeResult, setCodeResult] = useState(null);
+  const [codeError, setCodeError] = useState("");
+  const [codeLoading, setCodeLoading] = useState(false);
 
   useEffect(() => {
     fetchOrders();
@@ -145,6 +151,27 @@ export function MerchantOrdersPage() {
     }
   };
 
+  const handleCodeValidate = async (e) => {
+    e.preventDefault();
+    const code = codeInput.trim();
+    if (!/^\d{6}$/.test(code)) {
+      setCodeError("Enter a valid 6-digit code");
+      setCodeResult(null);
+      return;
+    }
+    setCodeLoading(true);
+    setCodeError("");
+    setCodeResult(null);
+    try {
+      const order = await validateCode(code);
+      setCodeResult(order);
+    } catch (err) {
+      setCodeError(err.response?.data?.message || "Code not found");
+    } finally {
+      setCodeLoading(false);
+    }
+  };
+
   const STATS = [
     { label: "Pending", value: counts.pending_verification, Icon: Clock, color: "text-amber-600", bg: "bg-amber-50" },
     { label: "New", value: counts.locked, Icon: Package, color: "text-blue-600", bg: "bg-blue-50" },
@@ -161,6 +188,54 @@ export function MerchantOrdersPage() {
           <p className="mt-1 text-sm text-slate-600">
             Verify payments and manage orders for your products.
           </p>
+        </div>
+
+        {/* Code validator */}
+        <div className="mb-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="flex items-center gap-2 mb-3">
+            <KeyRound className="h-4 w-4 text-primary" />
+            <h2 className="text-sm font-semibold text-slate-800">Validate Customer Code</h2>
+          </div>
+          <form onSubmit={handleCodeValidate} className="flex gap-2">
+            <input
+              type="text"
+              inputMode="numeric"
+              maxLength={6}
+              placeholder="6-digit code"
+              value={codeInput}
+              onChange={(e) => { setCodeInput(e.target.value.replace(/\D/g, "")); setCodeError(""); setCodeResult(null); }}
+              className="flex-1 min-h-[44px] rounded-xl border border-slate-200 px-4 text-center text-xl font-bold font-mono tracking-widest text-slate-900 placeholder:text-slate-300 placeholder:text-base placeholder:font-normal placeholder:tracking-normal focus:outline-none focus:ring-2 focus:ring-primary"
+            />
+            <button
+              type="submit"
+              disabled={codeLoading || codeInput.length !== 6}
+              className="min-h-[44px] rounded-xl bg-primary px-5 text-sm font-semibold text-white shadow-lg shadow-primary/25 hover:bg-orange-600 transition-all disabled:opacity-50"
+            >
+              {codeLoading ? "Checking…" : "Validate"}
+            </button>
+          </form>
+          {codeError && (
+            <p className="mt-2 text-sm text-red-600">{codeError}</p>
+          )}
+          {codeResult && (
+            <div className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3">
+              <p className="text-sm font-semibold text-emerald-800">
+                Valid — {codeResult.buyerName || codeResult.buyerEmail}
+              </p>
+              <ul className="mt-1 space-y-0.5">
+                {codeResult.items
+                  .filter((i) => i.merchantId === merchantId)
+                  .map((item, idx) => (
+                    <li key={idx} className="text-xs text-emerald-700">
+                      {item.name} × {item.quantity} — PKR {(item.price * item.quantity).toFixed(2)}
+                    </li>
+                  ))}
+              </ul>
+              <p className="mt-1 text-xs text-emerald-600 capitalize">
+                Status: {codeResult.status.replace("_", " ")}
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Stats */}
@@ -347,9 +422,12 @@ export function MerchantOrdersPage() {
                         </div>
                       )}
 
-                      {!isPending && !isRejected && (
-                        <div className="rounded-xl border border-slate-200 bg-white p-2 shadow-sm">
-                          <QRCodeSVG value={order.qrValue} size={100} />
+                      {!isPending && !isRejected && order.redemptionCode && (
+                        <div className="rounded-xl border border-slate-200 bg-white px-5 py-3 shadow-sm text-center">
+                          <p className="mb-1 text-xs font-medium text-slate-400 uppercase tracking-wide">Code</p>
+                          <p className="text-2xl font-bold tracking-[0.2em] text-slate-900 font-mono">
+                            {order.redemptionCode}
+                          </p>
                         </div>
                       )}
 

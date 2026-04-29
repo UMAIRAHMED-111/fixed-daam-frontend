@@ -1,12 +1,11 @@
 import { useState } from "react";
-import { QRCodeSVG } from "qrcode.react";
 import { Store, ChevronDown, ChevronUp } from "lucide-react";
 import { useOrdersStore } from "@/stores/ordersStore";
 import { toast } from "sonner";
 
 export function OrderCard({ order }) {
   const markDelivered = useOrdersStore((s) => s.markDelivered);
-  const [qrOpen, setQrOpen] = useState(order.status === "ready");
+  const [codeOpen, setCodeOpen] = useState(order.status === "ready");
   const [loading, setLoading] = useState(false);
 
   const isDelivered = order.status === "delivered";
@@ -114,15 +113,15 @@ export function OrderCard({ order }) {
           <div className="flex flex-wrap items-center gap-3">
             <button
               type="button"
-              onClick={() => setQrOpen((v) => !v)}
+              onClick={() => setCodeOpen((v) => !v)}
               className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:text-orange-600 transition-colors"
             >
-              {qrOpen ? (
+              {codeOpen ? (
                 <ChevronUp className="h-4 w-4" />
               ) : (
                 <ChevronDown className="h-4 w-4" />
               )}
-              {qrOpen ? "Hide" : "Show"} QR code
+              {codeOpen ? "Hide" : "Show"} pickup code
             </button>
 
             {isReady && (
@@ -150,10 +149,14 @@ export function OrderCard({ order }) {
           </div>
         )}
 
-        {qrOpen && !isPending && !isRejected && (
+        {codeOpen && !isPending && !isRejected && (
           <div className="mt-4 flex justify-center">
-            <div className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
-              <QRCodeSVG value={order.qrValue} size={140} />
+            <div className="rounded-xl border border-slate-200 bg-white px-8 py-5 shadow-sm text-center">
+              <p className="mb-1 text-xs font-medium text-slate-500 uppercase tracking-wide">Pickup Code</p>
+              <p className="text-4xl font-bold tracking-[0.25em] text-slate-900 font-mono">
+                {order.redemptionCode}
+              </p>
+              <p className="mt-2 text-xs text-slate-400">Show this code to the merchant at pickup</p>
             </div>
           </div>
         )}

@@ -3,7 +3,7 @@ import { api } from "@/lib/api";
 
 /**
  * Orders store — backed by /v1/orders API.
- * Order shape: { id, buyerId, items[], total, qrValue, status: 'locked'|'ready'|'delivered', createdAt }
+ * Order shape: { id, buyerId, items[], total, redemptionCode, status: 'locked'|'ready'|'delivered', createdAt }
  */
 export const useOrdersStore = create((set, get) => ({
   orders: [],
@@ -77,4 +77,9 @@ export const useOrdersStore = create((set, get) => ({
     get().orders.filter((o) =>
       o.items.some((i) => i.merchantId === merchantId)
     ),
+
+  validateCode: async (code) => {
+    const res = await api.post("/v1/orders/validate-code", { code });
+    return res.data;
+  },
 }));
