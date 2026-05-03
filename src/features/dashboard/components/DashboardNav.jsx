@@ -13,12 +13,14 @@ export function DashboardNav() {
   const { user, logout } = useAuthStore();
   const email = user?.email ?? "User";
   const isMerchant = user?.role === "merchant";
+  const isAdmin = user?.role === "admin";
   const [cartOpen, setCartOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const items = useCartStore((s) => s.items);
   const cartCount = items.reduce((s, i) => s + i.quantity, 0);
   const location = useLocation();
   const isOrders = location.pathname === "/dashboard/orders";
+  const isAdminOrders = location.pathname === "/dashboard/admin/orders";
   const isInventory = location.pathname.startsWith("/dashboard/inventory");
   const isProfile = location.pathname === "/dashboard/profile";
 
@@ -38,25 +40,27 @@ export function DashboardNav() {
 
           {/* Desktop: full nav */}
           <div className="hidden flex-1 items-center justify-end gap-2 sm:gap-4 md:flex">
+            {!isAdmin && (
+              <Link
+                to={isMerchant ? "/dashboard/inventory" : "/dashboard"}
+                className={`rounded-lg px-3 py-2 text-sm font-medium transition min-h-[44px] flex items-center shrink-0 ${
+                  isMerchant ? (isInventory ? "text-primary bg-primary/10" : "text-slate-600 hover:bg-slate-100")
+                    : (!isOrders && !isInventory ? "text-primary bg-primary/10" : "text-slate-600 hover:bg-slate-100")
+                }`}
+              >
+                {isMerchant ? "Inventory" : "Products"}
+              </Link>
+            )}
             <Link
-              to={isMerchant ? "/dashboard/inventory" : "/dashboard"}
-              className={`rounded-lg px-3 py-2 text-sm font-medium transition min-h-[44px] flex items-center shrink-0 ${
-                isMerchant ? (isInventory ? "text-primary bg-primary/10" : "text-slate-600 hover:bg-slate-100")
-                  : (!isOrders && !isInventory ? "text-primary bg-primary/10" : "text-slate-600 hover:bg-slate-100")
-              }`}
-            >
-              {isMerchant ? "Inventory" : "Products"}
-            </Link>
-            <Link
-              to="/dashboard/orders"
+              to={isAdmin ? "/dashboard/admin/orders" : "/dashboard/orders"}
               className={`rounded-lg px-3 py-2 text-sm font-medium transition min-h-[44px] flex items-center gap-1.5 shrink-0 ${
-                isOrders ? "text-primary bg-primary/10" : "text-slate-600 hover:bg-slate-100"
+                (isOrders || isAdminOrders) ? "text-primary bg-primary/10" : "text-slate-600 hover:bg-slate-100"
               }`}
             >
               <Package className="h-4 w-4 shrink-0" aria-hidden />
               Orders
             </Link>
-            {!isMerchant && (
+            {!isMerchant && !isAdmin && (
             <button
               type="button"
               onClick={() => setCartOpen(true)}
@@ -92,7 +96,7 @@ export function DashboardNav() {
 
           {/* Mobile: cart + hamburger */}
           <div className="flex items-center gap-1 md:hidden">
-            {!isMerchant && (
+            {!isMerchant && !isAdmin && (
             <button
               type="button"
               onClick={() => setCartOpen(true)}
@@ -129,21 +133,23 @@ export function DashboardNav() {
               className="border-t border-slate-200 bg-white md:hidden"
             >
               <div className="flex flex-col gap-1 px-4 py-3">
+                {!isAdmin && (
+                  <Link
+                    to={isMerchant ? "/dashboard/inventory" : "/dashboard"}
+                    onClick={closeMobileMenu}
+                    className={`min-h-[44px] flex items-center rounded-lg px-3 py-2.5 text-sm font-medium ${
+                      isMerchant ? (isInventory ? "bg-primary/10 text-primary" : "text-slate-700 hover:bg-slate-50")
+                        : (!isOrders && !isInventory ? "bg-primary/10 text-primary" : "text-slate-700 hover:bg-slate-50")
+                    }`}
+                  >
+                    {isMerchant ? "Inventory" : "Products"}
+                  </Link>
+                )}
                 <Link
-                  to={isMerchant ? "/dashboard/inventory" : "/dashboard"}
-                  onClick={closeMobileMenu}
-                  className={`min-h-[44px] flex items-center rounded-lg px-3 py-2.5 text-sm font-medium ${
-                    isMerchant ? (isInventory ? "bg-primary/10 text-primary" : "text-slate-700 hover:bg-slate-50")
-                      : (!isOrders && !isInventory ? "bg-primary/10 text-primary" : "text-slate-700 hover:bg-slate-50")
-                  }`}
-                >
-                  {isMerchant ? "Inventory" : "Products"}
-                </Link>
-                <Link
-                  to="/dashboard/orders"
+                  to={isAdmin ? "/dashboard/admin/orders" : "/dashboard/orders"}
                   onClick={closeMobileMenu}
                   className={`min-h-[44px] flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium ${
-                    isOrders ? "bg-primary/10 text-primary" : "text-slate-700 hover:bg-slate-50"
+                    (isOrders || isAdminOrders) ? "bg-primary/10 text-primary" : "text-slate-700 hover:bg-slate-50"
                   }`}
                 >
                   <Package className="h-4 w-4" />

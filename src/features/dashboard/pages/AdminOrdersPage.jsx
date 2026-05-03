@@ -1,7 +1,7 @@
-import { useEffect, useState, useMemo, useCallback } from "react";
-import { Search, Package, Clock, CheckCircle2, Truck, XCircle, KeyRound } from "lucide-react";
+import { useEffect, useState, useMemo } from "react";
+import { Search, Package, Clock, CheckCircle2, Truck, XCircle } from "lucide-react";
 import { useAuthStore } from "@/stores/authStore";
-import { useOrdersStore } from "@/stores/ordersStore";
+import { api } from "@/lib/api";
 import { toast } from "sonner";
 
 const STATUS_TABS = [
@@ -30,42 +30,35 @@ function StatusBadge({ status }) {
   );
 }
 
-export function MerchantOrdersPage() {
+export function AdminOrdersPage() {
   const user = useAuthStore((s) => s.user);
-  const merchantId = user?.id;
-  const orders = useOrdersStore((s) => s.getOrdersForMerchant(merchantId));
-  const fetchOrders = useOrdersStore((s) => s.fetchOrders);
-  const markReady = useOrdersStore((s) => s.markReady);
-  const markDelivered = useOrdersStore((s) => s.markDelivered);
-  const loading = useOrdersStore((s) => s.loading);
-
-  const validateCode = useOrdersStore((s) => s.validateCode);
-
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("pending_verification");
   const [actionLoading, setActionLoading] = useState(null);
+  const [rejectingId, setRejectingId] = useState(null);
+  const [rejectionNote, setRejectionNote] = useState("");
   const [lightboxSrc, setLightboxSrc] = useState(null);
 
-  const [codeInput, setCodeInput] = useState("");
-  const [codeResult, setCodeResult] = useState(null);
-  const [codeError, setCodeError] = useState("");
-  const [codeLoading, setCodeLoading] = useState(false);
+  const fetchOrders = async () => {
+    setLoading(true);
+    try {
+      const res = await api.get("/v1/admin/orders", { params: { limit: 100 } });
+      const data = res.data;
+      setOrders(data.results ?? (Array.isArray(data) ? data : []));
+    } catch {
+      toast.error("Failed to load orders");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     fetchOrders();
-  }, [fetchOrders]);
+  }, []);
 
-  if (user?.role !== "merchant") return null;
-
-  const getMyItems = useCallback(
-    (order) => order.items.filter((i) => i.merchantId === merchantId),
-    [merchantId]
-  );
-
-  const getMySubtotal = useCallback(
-    (order) => getMyItems(order).reduce((s, i) => s + i.price * i.quantity, 0),
-    [getMyItems]
-  );
+  if (user?.role !== "admin") return null;
 
   const counts = useMemo(
     () => ({
@@ -91,54 +84,43 @@ export function MerchantOrdersPage() {
           o.id?.toLowerCase().includes(q) ||
           o.buyerName?.toLowerCase().includes(q) ||
           o.buyerEmail?.toLowerCase().includes(q) ||
-          getMyItems(o).some((i) => i.name?.toLowerCase().includes(q))
+          o.items?.some((i) => i.name?.toLowerCase().includes(q))
       );
     }
     return list;
-  }, [orders, statusFilter, search, getMyItems]);
+  }, [orders, statusFilter, search]);
 
-  const handleMarkReady = async (orderId) => {
-    setActionLoading(orderId + "-ready");
+  const updateOrderInState = (updated) =>
+    setOrders((prev) => prev.map((o) => (o.id === updated.id ? updated : o)));
+
+  const handleApprove = async (orderId) => {
+    setActionLoading(orderId + "-approve");
     try {
-      await markReady(orderId);
-      toast.success("Order marked ready for pickup.");
+      const res = await api.patch(`/v1/admin/orders/${orderId}/verify`, { action: "approve" });
+      updateOrderInState(res.data);
+      toast.success("Payment approved — order is now active.");
     } catch (err) {
-      toast.error(err.response?.data?.message || "Failed to update order");
+      toast.error(err.response?.data?.message || "Failed to approve order");
     } finally {
       setActionLoading(null);
     }
   };
 
-  const handleMarkDelivered = async (orderId) => {
-    setActionLoading(orderId + "-delivered");
+  const handleReject = async (orderId) => {
+    setActionLoading(orderId + "-reject");
     try {
-      await markDelivered(orderId);
-      toast.success("Order marked as delivered.");
+      const res = await api.patch(`/v1/admin/orders/${orderId}/verify`, {
+        action: "reject",
+        note: rejectionNote.trim() || null,
+      });
+      updateOrderInState(res.data);
+      setRejectingId(null);
+      setRejectionNote("");
+      toast.success("Payment rejected.");
     } catch (err) {
-      toast.error(err.response?.data?.message || "Failed to update order");
+      toast.error(err.response?.data?.message || "Failed to reject order");
     } finally {
       setActionLoading(null);
-    }
-  };
-
-  const handleCodeValidate = async (e) => {
-    e.preventDefault();
-    const code = codeInput.trim();
-    if (!/^\d{6}$/.test(code)) {
-      setCodeError("Enter a valid 6-digit code");
-      setCodeResult(null);
-      return;
-    }
-    setCodeLoading(true);
-    setCodeError("");
-    setCodeResult(null);
-    try {
-      const order = await validateCode(code);
-      setCodeResult(order);
-    } catch (err) {
-      setCodeError(err.response?.data?.message || "Code not found");
-    } finally {
-      setCodeLoading(false);
     }
   };
 
@@ -152,60 +134,11 @@ export function MerchantOrdersPage() {
   return (
     <div className="min-h-[calc(100vh-4rem)] bg-slate-50">
       <div className="mx-auto max-w-4xl px-4 py-6 sm:px-6 lg:px-8">
-        {/* Header */}
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-slate-900">Orders</h1>
+          <h1 className="text-2xl font-bold text-slate-900">Payment verification</h1>
           <p className="mt-1 text-sm text-slate-600">
-            Verify payments and manage orders for your products.
+            Review payment proofs and approve or reject orders.
           </p>
-        </div>
-
-        {/* Code validator */}
-        <div className="mb-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <div className="flex items-center gap-2 mb-3">
-            <KeyRound className="h-4 w-4 text-primary" />
-            <h2 className="text-sm font-semibold text-slate-800">Validate Customer Code</h2>
-          </div>
-          <form onSubmit={handleCodeValidate} className="flex gap-2">
-            <input
-              type="text"
-              inputMode="numeric"
-              maxLength={6}
-              placeholder="6-digit code"
-              value={codeInput}
-              onChange={(e) => { setCodeInput(e.target.value.replace(/\D/g, "")); setCodeError(""); setCodeResult(null); }}
-              className="flex-1 min-h-[44px] rounded-xl border border-slate-200 px-4 text-center text-xl font-bold font-mono tracking-widest text-slate-900 placeholder:text-slate-300 placeholder:text-base placeholder:font-normal placeholder:tracking-normal focus:outline-none focus:ring-2 focus:ring-primary"
-            />
-            <button
-              type="submit"
-              disabled={codeLoading || codeInput.length !== 6}
-              className="min-h-[44px] rounded-xl bg-primary px-5 text-sm font-semibold text-white shadow-lg shadow-primary/25 hover:bg-orange-600 transition-all disabled:opacity-50"
-            >
-              {codeLoading ? "Checking…" : "Validate"}
-            </button>
-          </form>
-          {codeError && (
-            <p className="mt-2 text-sm text-red-600">{codeError}</p>
-          )}
-          {codeResult && (
-            <div className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3">
-              <p className="text-sm font-semibold text-emerald-800">
-                Valid — {codeResult.buyerName || codeResult.buyerEmail}
-              </p>
-              <ul className="mt-1 space-y-0.5">
-                {codeResult.items
-                  .filter((i) => i.merchantId === merchantId)
-                  .map((item, idx) => (
-                    <li key={idx} className="text-xs text-emerald-700">
-                      {item.name} × {item.quantity} — PKR {(item.price * item.quantity).toFixed(2)}
-                    </li>
-                  ))}
-              </ul>
-              <p className="mt-1 text-xs text-emerald-600 capitalize">
-                Status: {codeResult.status.replace("_", " ")}
-              </p>
-            </div>
-          )}
         </div>
 
         {/* Stats */}
@@ -221,23 +154,12 @@ export function MerchantOrdersPage() {
           ))}
         </div>
 
-        {/* Pending payment alert */}
         {counts.pending_verification > 0 && (
           <div className="mb-3 flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
             <span className="inline-block h-2 w-2 shrink-0 rounded-full bg-amber-500 animate-pulse" />
             <span>
-              <strong>{counts.pending_verification}</strong> order{counts.pending_verification > 1 ? "s are" : " is"} awaiting
-              payment verification.
-            </span>
-          </div>
-        )}
-
-        {/* New order alert */}
-        {counts.locked > 0 && (
-          <div className="mb-3 flex items-center gap-3 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800">
-            <span className="inline-block h-2 w-2 shrink-0 rounded-full bg-blue-500 animate-pulse" />
-            <span>
-              <strong>{counts.locked}</strong> new order{counts.locked > 1 ? "s need" : " needs"} your attention.
+              <strong>{counts.pending_verification}</strong> order
+              {counts.pending_verification > 1 ? "s are" : " is"} awaiting payment verification.
             </span>
           </div>
         )}
@@ -290,21 +212,15 @@ export function MerchantOrdersPage() {
             <p className="font-medium text-slate-700">
               {orders.length === 0 ? "No orders yet" : "No orders match your search"}
             </p>
-            {orders.length === 0 && (
-              <p className="mt-1 text-sm text-slate-500">
-                Orders containing your products will appear here.
-              </p>
-            )}
           </div>
         ) : (
           <ul className="space-y-4">
             {filtered.map((order) => {
-              const items = getMyItems(order);
-              const subtotal = getMySubtotal(order);
               const isPending = order.status === "pending_verification";
               const isRejected = order.status === "rejected";
-              const isReadyLoading = actionLoading === order.id + "-ready";
-              const isDeliveredLoading = actionLoading === order.id + "-delivered";
+              const isApproving = actionLoading === order.id + "-approve";
+              const isRejecting = actionLoading === order.id + "-reject";
+              const showRejectForm = rejectingId === order.id;
 
               return (
                 <li key={order.id} className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
@@ -324,9 +240,8 @@ export function MerchantOrdersPage() {
                     </span>
                   </div>
 
-                  {/* Content */}
                   <div className="flex flex-col gap-5 p-5 sm:flex-row sm:items-start sm:justify-between">
-                    {/* Left: buyer + items */}
+                    {/* Buyer + items */}
                     <div className="flex-1 min-w-0">
                       {(order.buyerName || order.buyerEmail) && (
                         <div className="mb-4 flex items-center gap-3">
@@ -344,11 +259,12 @@ export function MerchantOrdersPage() {
                         </div>
                       )}
 
-                      <ul className="space-y-2">
-                        {items.map((item, i) => (
+                      <ul className="space-y-1.5">
+                        {order.items?.map((item, i) => (
                           <li key={i} className="flex items-center justify-between gap-4 text-sm">
                             <span className="text-slate-700 truncate">
-                              {item.name} <span className="text-slate-400">× {item.quantity}</span>
+                              {item.name}{" "}
+                              <span className="text-slate-400">× {item.quantity}</span>
                             </span>
                             <span className="shrink-0 text-slate-500">
                               PKR {(item.price * item.quantity).toFixed(2)}
@@ -356,8 +272,9 @@ export function MerchantOrdersPage() {
                           </li>
                         ))}
                       </ul>
-                      <p className="mt-4 text-sm font-semibold text-slate-900">
-                        Subtotal: PKR {Number(subtotal).toFixed(2)}
+
+                      <p className="mt-3 text-sm font-semibold text-slate-900">
+                        Total: PKR {Number(order.total).toFixed(2)}
                       </p>
 
                       {isRejected && order.rejectionNote && (
@@ -367,7 +284,7 @@ export function MerchantOrdersPage() {
                       )}
                     </div>
 
-                    {/* Right: payment proof (pending) or QR + actions (approved) */}
+                    {/* Payment proof / status */}
                     <div className="flex shrink-0 flex-col items-center gap-3">
                       {isPending && order.paymentProof && (
                         <div>
@@ -389,43 +306,6 @@ export function MerchantOrdersPage() {
                         </div>
                       )}
 
-                      {!isPending && !isRejected && order.redemptionCode && (
-                        <div className="rounded-xl border border-slate-200 bg-white px-5 py-3 shadow-sm text-center">
-                          <p className="mb-1 text-xs font-medium text-slate-400 uppercase tracking-wide">Code</p>
-                          <p className="text-2xl font-bold tracking-[0.2em] text-slate-900 font-mono">
-                            {order.redemptionCode}
-                          </p>
-                        </div>
-                      )}
-
-                      {order.status === "locked" && (
-                        <button
-                          type="button"
-                          onClick={() => handleMarkReady(order.id)}
-                          disabled={isReadyLoading}
-                          className="w-full min-h-[44px] rounded-2xl bg-primary px-4 text-sm font-semibold text-white shadow-lg shadow-primary/25 hover:bg-orange-600 transition-all touch-manipulation disabled:opacity-60"
-                        >
-                          {isReadyLoading ? "Updating…" : "Mark ready"}
-                        </button>
-                      )}
-
-                      {order.status === "ready" && (
-                        <button
-                          type="button"
-                          onClick={() => handleMarkDelivered(order.id)}
-                          disabled={isDeliveredLoading}
-                          className="w-full min-h-[44px] rounded-2xl bg-emerald-600 px-4 text-sm font-semibold text-white shadow-lg shadow-emerald-600/20 hover:bg-emerald-700 transition-all touch-manipulation disabled:opacity-60"
-                        >
-                          {isDeliveredLoading ? "Updating…" : "Mark delivered"}
-                        </button>
-                      )}
-
-                      {order.status === "delivered" && (
-                        <span className="rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-medium text-emerald-700">
-                          Collected
-                        </span>
-                      )}
-
                       {isRejected && (
                         <span className="rounded-full bg-red-50 px-3 py-1.5 text-xs font-medium text-red-600 flex items-center gap-1">
                           <XCircle className="h-3.5 w-3.5" />
@@ -435,11 +315,55 @@ export function MerchantOrdersPage() {
                     </div>
                   </div>
 
+                  {/* Approve / Reject actions */}
                   {isPending && (
-                    <div className="border-t border-slate-100 px-5 py-3">
-                      <p className="text-xs text-amber-700 bg-amber-50 rounded-lg px-3 py-2">
-                        Awaiting admin payment verification.
-                      </p>
+                    <div className="border-t border-slate-100 px-5 py-4">
+                      {showRejectForm ? (
+                        <div className="space-y-3">
+                          <textarea
+                            rows={2}
+                            placeholder="Rejection reason (optional)…"
+                            value={rejectionNote}
+                            onChange={(e) => setRejectionNote(e.target.value)}
+                            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-red-400 resize-none"
+                          />
+                          <div className="flex gap-2">
+                            <button
+                              type="button"
+                              onClick={() => handleReject(order.id)}
+                              disabled={isRejecting}
+                              className="min-h-[44px] flex-1 rounded-2xl bg-red-600 px-4 text-sm font-semibold text-white hover:bg-red-700 transition-all disabled:opacity-60"
+                            >
+                              {isRejecting ? "Rejecting…" : "Confirm reject"}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => { setRejectingId(null); setRejectionNote(""); }}
+                              className="min-h-[44px] rounded-2xl border border-slate-200 px-4 text-sm font-medium text-slate-600 hover:bg-slate-50 transition-all"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex gap-3">
+                          <button
+                            type="button"
+                            onClick={() => handleApprove(order.id)}
+                            disabled={isApproving}
+                            className="min-h-[44px] flex-1 rounded-2xl bg-primary px-4 text-sm font-semibold text-white shadow-lg shadow-primary/25 hover:bg-orange-600 transition-all touch-manipulation disabled:opacity-60"
+                          >
+                            {isApproving ? "Approving…" : "Approve payment"}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setRejectingId(order.id)}
+                            className="min-h-[44px] flex-1 rounded-2xl border-2 border-red-200 px-4 text-sm font-semibold text-red-600 hover:bg-red-50 transition-all touch-manipulation"
+                          >
+                            Reject
+                          </button>
+                        </div>
+                      )}
                     </div>
                   )}
                 </li>

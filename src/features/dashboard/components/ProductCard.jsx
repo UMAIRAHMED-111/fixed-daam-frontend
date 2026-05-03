@@ -20,6 +20,9 @@ export function ProductCard({ product }) {
         <h3 className="mt-1 font-semibold text-slate-900 line-clamp-2 group-hover:text-primary transition-colors">
           {product.name}
         </h3>
+        {product.merchantName && (
+          <p className="mt-0.5 text-xs text-slate-500">{product.merchantName}</p>
+        )}
         <p className="mt-1 text-sm text-slate-600 line-clamp-2">{product.description}</p>
         <p className="mt-auto pt-3 text-lg font-bold text-slate-900">
           PKR {Number(product.price).toFixed(2)}

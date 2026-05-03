@@ -43,8 +43,13 @@ export function MerchantProductFormPage() {
     }
   }, [product, user?.id, form]);
 
+  useEffect(() => {
+    if (user?.role !== "merchant") {
+      navigate("/dashboard", { replace: true });
+    }
+  }, [user?.role, navigate]);
+
   if (user?.role !== "merchant") {
-    navigate("/dashboard", { replace: true });
     return null;
   }
 

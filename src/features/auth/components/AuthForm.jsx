@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation, Form } from "react-router-dom";
 import { toast } from "sonner";
 import { trimFormData } from "@/lib/formUtils";
 import { FormField } from "@/components/ui/FormField";
@@ -92,13 +92,9 @@ export function AuthForm({ authType = "buyer" }) {
         email: cleaned.email,
         password: cleaned.password,
         role,
+        name: cleaned.name || cleaned.storeName,
+        phoneNumber: cleaned.phoneNumber,
       };
-      if (isMerchant) {
-        body.name = cleaned.storeName;
-        body.phoneNumber = cleaned.phoneNumber;
-      } else {
-        body.name = cleaned.name;
-      }
       await api.post("/v1/auth/register", body);
       signUpForm.reset();
       setRegisteredEmail(cleaned.email);
@@ -220,9 +216,6 @@ export function AuthForm({ authType = "buyer" }) {
               <FormField label="Store / Business name" required error={signUpForm.formState.errors.storeName?.message} id="storeName">
                 <Input type="text" placeholder="e.g. Ahmed's Electronics" {...signUpForm.register("storeName")} />
               </FormField>
-              <FormField label="Phone number" required error={signUpForm.formState.errors.phoneNumber?.message} id="phoneNumber">
-                <Input type="tel" placeholder="e.g. +92 300 1234567" {...signUpForm.register("phoneNumber")} />
-              </FormField>
             </>
           ) : (
             /* ── Buyer fields ── */
@@ -234,11 +227,14 @@ export function AuthForm({ authType = "buyer" }) {
           <FormField label="Email" required error={signUpForm.formState.errors.email?.message} id="su-email">
             <Input type="email" placeholder="you@example.com" {...signUpForm.register("email")} />
           </FormField>
-
+          <FormField label="Phone number" required error={signUpForm.formState.errors.phoneNumber?.message} id="phoneNumber">
+            <Input type="tel" placeholder="e.g. +92 300 1234567" {...signUpForm.register("phoneNumber")} />
+          </FormField>
           <FormField label="Password" required error={signUpForm.formState.errors.password?.message} id="su-password">
             <PasswordInput placeholder="Min. 8 characters" {...signUpForm.register("password")} />
             <PasswordStrengthMeter password={watchedPassword} />
           </FormField>
+          
 
           <FormField label="Confirm password" required error={signUpForm.formState.errors.confirmPassword?.message} id="confirmPassword">
             <PasswordInput placeholder="••••••••" {...signUpForm.register("confirmPassword")} />

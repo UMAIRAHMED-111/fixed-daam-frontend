@@ -17,11 +17,14 @@ export function DashboardPage() {
   return <Outlet context={{ role }} />;
 }
 
-/** Index route: buyers see products, merchants redirect to inventory */
+/** Index route: buyers see products, merchants → inventory, admins → admin orders */
 export function DashboardIndex() {
   const user = useAuthStore((s) => s.user);
   if (user?.role === "merchant") {
     return <Navigate to="/dashboard/inventory" replace />;
+  }
+  if (user?.role === "admin") {
+    return <Navigate to="/dashboard/admin/orders" replace />;
   }
   return <BuyerProductsPage />;
 }

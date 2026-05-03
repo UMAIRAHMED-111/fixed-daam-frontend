@@ -43,20 +43,6 @@ export const useOrdersStore = create((set, get) => ({
     return order;
   },
 
-  approveOrder: async (orderId) => {
-    const res = await api.patch(`/v1/orders/${orderId}/verify`, { action: "approve" });
-    const updated = res.data;
-    set((state) => ({ orders: state.orders.map((o) => (o.id === orderId ? updated : o)) }));
-    return updated;
-  },
-
-  rejectOrder: async (orderId, note) => {
-    const res = await api.patch(`/v1/orders/${orderId}/verify`, { action: "reject", note });
-    const updated = res.data;
-    set((state) => ({ orders: state.orders.map((o) => (o.id === orderId ? updated : o)) }));
-    return updated;
-  },
-
   markReady: async (orderId) => {
     const res = await api.patch(`/v1/orders/${orderId}/status`, { status: "ready" });
     const updated = res.data;

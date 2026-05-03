@@ -15,6 +15,10 @@ const passwordSchema = z
 
 export const buyerSignUpSchema = z
   .object({
+    phoneNumber: z
+      .string()
+      .min(1, "Phone number is required")
+      .regex(/^[0-9+\-\s()]{7,20}$/, "Enter a valid phone number"),
     name: z.string().min(1, "Full name is required"),
     email: z.string().min(1, "Email is required").email("Invalid email"),
     password: passwordSchema,

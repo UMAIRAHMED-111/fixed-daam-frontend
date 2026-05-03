@@ -1,13 +1,14 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import { Layout } from "@/components/layout/Layout";
 import { HomePage } from "@/features/home";
-import { AuthPage, VerifyEmailPage } from "@/features/auth";
+import { AuthPage, VerifyEmailPage, AdminLoginPage } from "@/features/auth";
 import { DashboardPage, DashboardIndex, DashboardOrdersPage } from "@/features/dashboard";
 import { ProductDetailPage } from "@/features/dashboard/pages/ProductDetailPage";
 import { MerchantInventoryPage } from "@/features/dashboard/pages/MerchantInventoryPage";
 import { MerchantProductFormPage } from "@/features/dashboard/pages/MerchantProductFormPage";
 import { BuyerOrdersPage } from "@/features/dashboard/pages/BuyerOrdersPage";
 import { UserProfilePage } from "@/features/dashboard/pages/UserProfilePage";
+import { AdminOrdersPage } from "@/features/dashboard/pages/AdminOrdersPage";
 import { NotFoundPage } from "@/features/not-found";
 import { TermsPage } from "@/features/legal/TermsPage";
 import { PrivacyPage } from "@/features/legal/PrivacyPage";
@@ -19,6 +20,7 @@ export default function App() {
       <Route element={<Layout />}>
         <Route path="/" element={<HomePage />} />
         <Route path="/auth" element={<AuthPage />} />
+        <Route path="/admin" element={<AdminLoginPage />} />
         <Route path="/verify-email" element={<VerifyEmailPage />} />
         <Route
           path="/dashboard"
@@ -34,6 +36,7 @@ export default function App() {
           <Route path="inventory" element={<MerchantInventoryPage />} />
           <Route path="inventory/new" element={<MerchantProductFormPage />} />
           <Route path="inventory/:id/edit" element={<MerchantProductFormPage />} />
+          <Route path="admin/orders" element={<AdminOrdersPage />} />
           <Route path="profile" element={<UserProfilePage />} />
         </Route>
         <Route path="/terms" element={<TermsPage />} />

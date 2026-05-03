@@ -20,8 +20,13 @@ export function MerchantInventoryPage() {
     }
   }, [merchantId, fetchMerchantProducts]);
 
+  useEffect(() => {
+    if (user?.role !== "merchant") {
+      navigate("/dashboard", { replace: true });
+    }
+  }, [user?.role, navigate]);
+
   if (user?.role !== "merchant") {
-    navigate("/dashboard", { replace: true });
     return null;
   }
 
