@@ -62,10 +62,7 @@ export function MerchantOrdersPage() {
     [merchantId]
   );
 
-  const getMySubtotal = useCallback(
-    (order) => getMyItems(order).reduce((s, i) => s + i.price * i.quantity, 0),
-    [getMyItems]
-  );
+
 
   const counts = useMemo(
     () => ({
@@ -300,7 +297,6 @@ export function MerchantOrdersPage() {
           <ul className="space-y-4">
             {filtered.map((order) => {
               const items = getMyItems(order);
-              const subtotal = getMySubtotal(order);
               const isPending = order.status === "pending_verification";
               const isRejected = order.status === "rejected";
               const isReadyLoading = actionLoading === order.id + "-ready";
@@ -329,36 +325,46 @@ export function MerchantOrdersPage() {
                     {/* Left: buyer + items */}
                     <div className="flex-1 min-w-0">
                       {(order.buyerName || order.buyerEmail) && (
-                        <div className="mb-4 flex items-center gap-3">
-                          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary">
-                            {(order.buyerName || order.buyerEmail)?.[0]?.toUpperCase()}
-                          </div>
-                          <div className="min-w-0">
-                            {order.buyerName && (
-                              <p className="text-sm font-semibold text-slate-800 truncate">{order.buyerName}</p>
-                            )}
-                            {order.buyerEmail && (
-                              <p className="text-xs text-slate-500 truncate">{order.buyerEmail}</p>
-                            )}
+                        <div className="mb-4">
+                          <p className="mb-1.5 text-xs font-medium text-slate-400 uppercase tracking-wide">Customer</p>
+                          <div className="flex items-center gap-3">
+                            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary">
+                              {(order.buyerName || order.buyerEmail)?.[0]?.toUpperCase()}
+                            </div>
+                            <div className="min-w-0">
+                              {order.buyerName && (
+                                <p className="text-sm font-semibold text-slate-800 truncate">{order.buyerName}</p>
+                              )}
+                              {order.buyerEmail && (
+                                <p className="text-xs text-slate-500 truncate">{order.buyerEmail}</p>
+                              )}
+                            </div>
                           </div>
                         </div>
                       )}
 
-                      <ul className="space-y-2">
+                      <p className="mb-1.5 text-xs font-medium text-slate-400 uppercase tracking-wide">Items</p>
+                      <ul className="space-y-1.5">
                         {items.map((item, i) => (
                           <li key={i} className="flex items-center justify-between gap-4 text-sm">
                             <span className="text-slate-700 truncate">
                               {item.name} <span className="text-slate-400">× {item.quantity}</span>
                             </span>
-                            <span className="shrink-0 text-slate-500">
-                              PKR {(item.price * item.quantity).toFixed(2)}
+                            <span className="shrink-0 text-slate-600 font-medium">
+                              PKR {(item.price * item.quantity).toLocaleString()}
                             </span>
                           </li>
                         ))}
                       </ul>
-                      <p className="mt-4 text-sm font-semibold text-slate-900">
-                        Subtotal: PKR {Number(subtotal).toFixed(2)}
-                      </p>
+
+                      {order.total != null && (
+                        <div className="mt-3 flex items-center justify-between border-t border-slate-100 pt-2">
+                          <span className="text-xs font-medium text-slate-500">Total</span>
+                          <span className="text-sm font-bold text-slate-900">
+                            PKR {order.total.toLocaleString()}
+                          </span>
+                        </div>
+                      )}
 
                       {isRejected && order.rejectionNote && (
                         <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-600">
@@ -388,15 +394,19 @@ export function MerchantOrdersPage() {
                           </button>
                         </div>
                       )}
-
-                      {!isPending && !isRejected && order.redemptionCode && (
-                        <div className="rounded-xl border border-slate-200 bg-white px-5 py-3 shadow-sm text-center">
-                          <p className="mb-1 text-xs font-medium text-slate-400 uppercase tracking-wide">Code</p>
-                          <p className="text-2xl font-bold tracking-[0.2em] text-slate-900 font-mono">
-                            {order.redemptionCode}
-                          </p>
-                        </div>
-                      )}
+                      {/* show image of the product */}
+                      <div className="w-28 h-28 bg-slate-100 rounded-xl overflow-hidden border border-slate-200">
+                        {items[0]?.image ? (
+                          <img
+                            src={items[0].image}
+                            alt={items[0].name}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <Package className="h-10 w-10 text-slate-300" aria-hidden />
+                        )}
+                      </div>
+                    
 
                       {order.status === "locked" && (
                         <button
@@ -450,7 +460,7 @@ export function MerchantOrdersPage() {
       </div>
 
       {/* Payment proof lightbox */}
-      {lightboxSrc && (
+      {/* {lightboxSrc && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
           onClick={() => setLightboxSrc(null)}
@@ -462,7 +472,7 @@ export function MerchantOrdersPage() {
             onClick={(e) => e.stopPropagation()}
           />
         </div>
-      )}
+      )} */}
     </div>
   );
 }

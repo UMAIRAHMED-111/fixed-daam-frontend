@@ -75,6 +75,11 @@ export function DashboardNav() {
               )}
             </button>
             )}
+            <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold ${
+              isAdmin ? "bg-red-100 text-red-700" : isMerchant ? "bg-violet-100 text-violet-700" : "bg-sky-100 text-sky-700"
+            }`}>
+              {isAdmin ? "Admin" : isMerchant ? "Merchant" : "Buyer"}
+            </span>
             <Link
               to="/dashboard/profile"
               className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-lg transition ${
@@ -165,8 +170,13 @@ export function DashboardNav() {
                   <UserCircle className="h-4 w-4" />
                   Profile
                 </Link>
-                <div className="min-h-[44px] flex items-center px-3 py-2.5 text-sm text-slate-500">
-                  {email}
+                <div className="min-h-[44px] flex items-center justify-between px-3 py-2.5">
+                  <span className="text-sm text-slate-500 truncate">{email}</span>
+                  <span className={`ml-2 shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold ${
+                    isAdmin ? "bg-red-100 text-red-700" : isMerchant ? "bg-violet-100 text-violet-700" : "bg-sky-100 text-sky-700"
+                  }`}>
+                    {isAdmin ? "Admin" : isMerchant ? "Merchant" : "Buyer"}
+                  </span>
                 </div>
                 <button
                   type="button"

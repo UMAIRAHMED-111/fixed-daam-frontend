@@ -78,6 +78,7 @@ export function AuthForm({ authType = "buyer" }) {
       loginForm.reset();
       let target = from && from !== "/auth" ? from : "/dashboard";
       if (!isMerchant && target.startsWith("/dashboard/inventory")) target = "/dashboard";
+      if (role !== "admin" && target.startsWith("/dashboard/admin")) target = "/dashboard";
       navigate(target, { replace: true });
     } catch (err) {
       const message = err.response?.data?.message || "Something went wrong. Please try again.";

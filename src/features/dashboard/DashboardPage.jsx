@@ -14,6 +14,11 @@ export function DashboardPage() {
     return <Navigate to="/dashboard" replace />;
   }
 
+  const isAdminRoute = location.pathname.startsWith("/dashboard/admin");
+  if (isAdminRoute && role !== "admin") {
+    return <Navigate to="/dashboard" replace />;
+  }
+
   return <Outlet context={{ role }} />;
 }
 
