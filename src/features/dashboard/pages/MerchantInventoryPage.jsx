@@ -4,6 +4,7 @@ import { Plus, Pencil, Trash2 } from "lucide-react";
 import { useAuthStore } from "@/stores/authStore";
 import { useInventoryStore } from "@/stores/inventoryStore";
 import { toast } from "sonner";
+import { ProductImage } from "../components/ProductImage";
 
 export function MerchantInventoryPage() {
   const user = useAuthStore((s) => s.user);
@@ -82,8 +83,8 @@ export function MerchantInventoryPage() {
                 className="flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"
               >
                 <div className="aspect-square w-full overflow-hidden bg-slate-100">
-                  <img
-                    src={p.images?.[0] ?? "https://picsum.photos/seed/placeholder/400/400"}
+                  <ProductImage
+                    product={p}
                     alt=""
                     className="h-full w-full object-cover"
                   />
@@ -95,7 +96,17 @@ export function MerchantInventoryPage() {
                   <p className="mt-auto pt-3 text-lg font-bold text-slate-900">
                     PKR {Number(p.price).toFixed(2)}
                   </p>
-                  <p className="text-sm text-slate-500">Stock: {p.stock}</p>
+                  {Number(p.reserved) > 0 ? (
+                    <p className="text-sm">
+                      <span className="text-slate-500">Available:</span>{" "}
+                      <span className="font-semibold text-slate-800">{p.stock}</span>
+                      <span className="ml-2 inline-flex items-center rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-700">
+                        {p.reserved} reserved
+                      </span>
+                    </p>
+                  ) : (
+                    <p className="text-sm text-slate-500">Stock: {p.stock}</p>
+                  )}
                   <div className="mt-3 flex gap-2">
                     <Link
                       to={`/dashboard/inventory/${p.id}/edit`}

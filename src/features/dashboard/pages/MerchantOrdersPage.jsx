@@ -22,6 +22,7 @@ import {
   formatDeliverableQty,
   getUom,
 } from "../data/uomData";
+import { PickupHistory } from "../components/PickupHistory";
 
 const STATUS_TABS = [
   { id: "all", label: "All" },
@@ -762,6 +763,15 @@ export function MerchantOrdersPage() {
                       order={order}
                       merchantId={merchantId}
                       initialCode={pickupCodePrefill}
+                    />
+                  )}
+
+                  {(isReady || isDelivered) && (
+                    <PickupHistory
+                      history={order.pickupHistory}
+                      hideMerchantId={merchantId}
+                      emptyHint="No items dispensed yet for this order."
+                      defaultOpen={isReady && (order.pickupHistory?.length ?? 0) > 0}
                     />
                   )}
                 </li>

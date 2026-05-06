@@ -1,9 +1,9 @@
 import { Link } from "react-router-dom";
 import { Package } from "lucide-react";
 import { formatUomSuffix, getUom } from "../data/uomData";
+import { ProductImage } from "./ProductImage";
 
 export function ProductCard({ product }) {
-  const image = product.images?.[0] ?? product.image ?? `https://picsum.photos/seed/${product.id}/400/400`;
   const isBundle = product.uom === "bundle";
   const innerUom = isBundle && product.bundleUom ? getUom(product.bundleUom) : null;
   const priceSuffix = formatUomSuffix(product);
@@ -14,8 +14,8 @@ export function ProductCard({ product }) {
       className="group flex flex-col rounded-2xl border border-slate-200 bg-white overflow-hidden shadow-sm hover:shadow-lg hover:border-slate-300 transition-all"
     >
       <div className="relative aspect-square w-full overflow-hidden bg-slate-100">
-        <img
-          src={image}
+        <ProductImage
+          product={product}
           alt=""
           className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300"
         />

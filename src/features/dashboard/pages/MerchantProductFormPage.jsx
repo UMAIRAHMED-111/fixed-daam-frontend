@@ -51,6 +51,8 @@ export function MerchantProductFormPage() {
   const bundleSize = form.watch("bundleSize");
   const bundleUom = form.watch("bundleUom");
   const bundleLabel = form.watch("bundleLabel");
+  const reserved = Number(product?.reserved ?? 0);
+  const stockInput = Number(form.watch("stock") ?? 0);
 
   useEffect(() => {
     if (product && user?.id === product.merchantId) {
@@ -344,6 +346,17 @@ export function MerchantProductFormPage() {
                 placeholder={stockPlaceholder}
                 {...form.register("stock")}
               />
+              {isEdit && reserved > 0 && (
+                <p
+                  className={`mt-1.5 text-xs ${
+                    stockInput < 0 ? "text-red-600" : "text-amber-700"
+                  }`}
+                >
+                  <strong>{reserved}</strong> {uomDef.short} currently reserved by
+                  in-flight orders. The number above is what's available to sell now —
+                  reserved units are tracked separately and won't be affected by edits here.
+                </p>
+              )}
             </FormField>
           </div>
 

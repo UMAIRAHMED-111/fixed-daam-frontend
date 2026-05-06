@@ -11,6 +11,8 @@ import {
   formatUomSuffix,
   formatQuantity,
 } from "../data/uomData";
+import { pickStockImage } from "../data/categoryImages";
+import { ProductImage } from "../components/ProductImage";
 
 export function ProductDetailPage() {
   const { id } = useParams();
@@ -62,7 +64,7 @@ export function ProductDetailPage() {
     );
   }
 
-  const images = product.images?.length ? product.images : ["https://picsum.photos/seed/placeholder/800/600"];
+  const images = product.images?.length ? product.images : [pickStockImage(product)];
   const isBundle = product.uom === "bundle";
   const innerUom = isBundle && product.bundleUom ? getUom(product.bundleUom) : null;
   const priceSuffix = formatUomSuffix(product);
@@ -160,11 +162,20 @@ export function ProductDetailPage() {
           {/* Slideshow */}
           <div className="flex-1">
             <div className="relative aspect-square max-w-lg overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-              <img
-                src={images[slideIndex]}
-                alt=""
-                className="h-full w-full object-cover"
-              />
+              {product.images?.length ? (
+                <img
+                  src={images[slideIndex]}
+                  alt=""
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <ProductImage
+                  product={product}
+                  alt=""
+                  className="h-full w-full object-cover"
+                  emojiSize="text-8xl"
+                />
+              )}
               {images.length > 1 && (
                 <>
                   <button

@@ -8,6 +8,7 @@ import {
   formatDeliverableQty,
   getRemainingDeliverable,
 } from "@/features/dashboard/data/uomData";
+import { PickupHistory } from "./PickupHistory";
 
 const TOTP_WINDOW = 120; // seconds — keep in sync with backend STEP_SECONDS
 
@@ -320,6 +321,14 @@ export function OrderCard({ order }) {
           </div>
         )}
       </div>
+
+      {(isReady || isDelivered) && (
+        <PickupHistory
+          history={order.pickupHistory}
+          emptyHint="Nothing collected yet — show your code at the store."
+          defaultOpen={isReady && (order.pickupHistory?.length ?? 0) > 0}
+        />
+      )}
     </div>
   );
 }
