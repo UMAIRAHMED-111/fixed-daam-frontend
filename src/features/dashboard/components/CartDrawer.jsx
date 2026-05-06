@@ -95,7 +95,7 @@ export function CartDrawer({ open, onClose }) {
               </div>
               <h3 className="font-semibold text-slate-900">Order submitted!</h3>
               <p className="mt-2 text-sm text-slate-600">
-                Your payment proof is under review. We'll notify you once it's verified (usually within 2–3 days). Your price is locked in.
+                Your payment proof is under review. We'll notify you once it's verified (usually within 2–3 hours). Your price is locked in.
               </p>
               <Link
                 to="/dashboard/orders"

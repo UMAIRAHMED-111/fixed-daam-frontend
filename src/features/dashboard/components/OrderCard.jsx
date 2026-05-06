@@ -251,7 +251,7 @@ export function OrderCard({ order }) {
       <div className="border-t border-slate-100 px-5 py-4">
         {isPending && (
           <p className="text-xs text-amber-700 bg-amber-50 rounded-lg px-3 py-2">
-            Payment proof submitted. Verification takes 2–3 days. Your price is locked in.
+            Payment proof submitted. Verification takes 2–3 hours. Your price is locked in.
           </p>
         )}
 

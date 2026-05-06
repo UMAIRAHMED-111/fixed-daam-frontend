@@ -119,7 +119,7 @@ export function BuyerOrdersPage() {
             <span className="inline-block h-2 w-2 shrink-0 rounded-full bg-amber-400 animate-pulse" />
             <span>
               <strong>{counts.pending_verification}</strong> order{counts.pending_verification > 1 ? "s are" : " is"} awaiting
-              payment verification (2–3 days).
+              payment verification (2–3 hours).
             </span>
           </div>
         )}

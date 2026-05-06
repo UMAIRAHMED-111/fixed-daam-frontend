@@ -124,7 +124,7 @@ export function ProductDetailPage() {
           </div>
           <h2 className="text-xl font-bold text-slate-900">Order submitted!</h2>
           <p className="mt-2 text-slate-600">
-            Your payment proof is under review. We'll notify you once it's verified (usually within 2–3 days). Your price is locked in.
+            Your payment proof is under review. We'll notify you once it's verified (usually within 2–3 hours). Your price is locked in.
           </p>
           <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
             <button
