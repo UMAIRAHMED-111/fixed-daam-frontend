@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ChevronLeft, Upload, X } from "lucide-react";
+import { ChevronLeft, Upload, X, Package } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
@@ -10,6 +10,11 @@ import { useAuthStore } from "@/stores/authStore";
 import { useInventoryStore } from "@/stores/inventoryStore";
 import { productFormSchema } from "../schemas/productSchema";
 import { CATEGORIES } from "../data/productsData";
+import {
+  UOM_OPTIONS,
+  BUNDLE_BASE_UOM_OPTIONS,
+  getUom,
+} from "../data/uomData";
 import { api } from "@/lib/api";
 
 export function MerchantProductFormPage() {
@@ -24,11 +29,28 @@ export function MerchantProductFormPage() {
 
   const form = useForm({
     resolver: zodResolver(productFormSchema),
-    defaultValues: { name: "", description: "", price: 0, category: "", stock: 0 },
+    defaultValues: {
+      name: "",
+      description: "",
+      price: 0,
+      category: "",
+      uom: "each",
+      stock: 0,
+      bundleSize: "",
+      bundleUom: "",
+      bundleLabel: "",
+    },
   });
   const fileInputRef = useRef(null);
   const [uploading, setUploading] = useState(false);
   const [images, setImages] = useState([]);
+
+  const uom = form.watch("uom");
+  const uomDef = getUom(uom);
+  const isBundle = uom === "bundle";
+  const bundleSize = form.watch("bundleSize");
+  const bundleUom = form.watch("bundleUom");
+  const bundleLabel = form.watch("bundleLabel");
 
   useEffect(() => {
     if (product && user?.id === product.merchantId) {
@@ -37,7 +59,11 @@ export function MerchantProductFormPage() {
         description: product.description ?? "",
         price: product.price,
         category: product.category,
+        uom: product.uom ?? "each",
         stock: product.stock,
+        bundleSize: product.bundleSize ?? "",
+        bundleUom: product.bundleUom ?? "",
+        bundleLabel: product.bundleLabel ?? "",
       });
       setImages(product.images ?? []);
     }
@@ -89,30 +115,45 @@ export function MerchantProductFormPage() {
     }
   };
 
-  const removeImage = (index) => setImages((prev) => prev.filter((_, i) => i !== index));
+  const removeImage = (index) =>
+    setImages((prev) => prev.filter((_, i) => i !== index));
+
+  // Display helpers driven by UOM
+  const priceUnitLabel = isBundle
+    ? `Price per ${bundleLabel?.trim() || "bundle"}`
+    : `Price per ${uomDef.short}`;
+  const stockLabel = isBundle
+    ? `Stock (${bundleLabel?.trim() || "bundles"})`
+    : `Stock (in ${uomDef.short})`;
+  const stockPlaceholder = uomDef.integer ? "0" : "0.00";
+  const innerUomDef = bundleUom ? getUom(bundleUom) : null;
 
   const onSubmit = async (data) => {
+    const payload = {
+      name: data.name,
+      description: data.description || "",
+      price: Number(data.price),
+      category: data.category,
+      uom: data.uom,
+      stock: Number(data.stock),
+      bundleSize:
+        data.uom === "bundle" && data.bundleSize !== ""
+          ? Number(data.bundleSize)
+          : null,
+      bundleUom: data.uom === "bundle" ? data.bundleUom || null : null,
+      bundleLabel: data.uom === "bundle" ? data.bundleLabel?.trim() || "" : "",
+      images,
+    };
+
     try {
       if (isEdit) {
-        await updateProduct(id, {
-          name: data.name,
-          description: data.description || "",
-          price: data.price,
-          category: data.category,
-          stock: data.stock,
-          images,
-        });
+        await updateProduct(id, payload);
         toast.success("Product updated");
       } else {
         await addProduct({
+          ...payload,
           merchantId: user.id,
           merchantName: user.storeName ?? user.name ?? "My Store",
-          name: data.name,
-          description: data.description || "",
-          price: data.price,
-          category: data.category,
-          stock: data.stock,
-          images,
         });
         toast.success("Product added");
       }
@@ -136,11 +177,27 @@ export function MerchantProductFormPage() {
         <h1 className="text-2xl font-bold text-slate-900">
           {isEdit ? "Edit product" : "Add product"}
         </h1>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="mt-6 space-y-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-          <FormField label="Product name" required error={form.formState.errors.name?.message} id="name">
-            <Input placeholder="e.g. Wireless Headphones" {...form.register("name")} />
+        <form
+          onSubmit={form.handleSubmit(onSubmit)}
+          className="mt-6 space-y-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
+        >
+          <FormField
+            label="Product name"
+            required
+            error={form.formState.errors.name?.message}
+            id="name"
+          >
+            <Input
+              placeholder="e.g. Wireless Headphones"
+              {...form.register("name")}
+            />
           </FormField>
-          <FormField label="Description" error={form.formState.errors.description?.message} id="description">
+
+          <FormField
+            label="Description"
+            error={form.formState.errors.description?.message}
+            id="description"
+          >
             <textarea
               placeholder="Short description"
               rows={3}
@@ -148,23 +205,145 @@ export function MerchantProductFormPage() {
               {...form.register("description")}
             />
           </FormField>
-          <FormField label="Category" required error={form.formState.errors.category?.message} id="category">
+
+          <FormField
+            label="Category"
+            required
+            error={form.formState.errors.category?.message}
+            id="category"
+          >
             <select
               className="w-full min-h-[44px] rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-base text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary touch-manipulation"
               {...form.register("category")}
             >
               <option value="">Select category</option>
               {CATEGORIES.map((c) => (
-                <option key={c} value={c}>{c}</option>
+                <option key={c} value={c}>
+                  {c}
+                </option>
               ))}
             </select>
           </FormField>
+
+          {/* Unit of measure */}
+          <FormField
+            label="Unit of measure"
+            required
+            error={form.formState.errors.uom?.message}
+            id="uom"
+          >
+            <select
+              className="w-full min-h-[44px] rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-base text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary touch-manipulation"
+              {...form.register("uom")}
+            >
+              {UOM_OPTIONS.map((u) => (
+                <option key={u.value} value={u.value}>
+                  {u.label}
+                </option>
+              ))}
+            </select>
+            <p className="mt-1.5 text-xs text-slate-500">
+              How customers buy this — by piece, by weight, or as a bundle.
+            </p>
+          </FormField>
+
+          {/* Bundle-only fields */}
+          {isBundle && (
+            <div className="rounded-xl border border-violet-200 bg-violet-50/40 p-4 space-y-4">
+              <div className="flex items-center gap-2 text-sm font-semibold text-violet-800">
+                <Package className="h-4 w-4" />
+                Bundle details
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <FormField
+                  label="Bundle size"
+                  required
+                  error={form.formState.errors.bundleSize?.message}
+                  id="bundleSize"
+                >
+                  <Input
+                    type="number"
+                    min={1}
+                    step={1}
+                    placeholder="e.g. 12"
+                    {...form.register("bundleSize")}
+                  />
+                </FormField>
+
+                <FormField
+                  label="What's inside"
+                  required
+                  error={form.formState.errors.bundleUom?.message}
+                  id="bundleUom"
+                >
+                  <select
+                    className="w-full min-h-[44px] rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-base text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary touch-manipulation"
+                    {...form.register("bundleUom")}
+                  >
+                    <option value="">Select base unit</option>
+                    {BUNDLE_BASE_UOM_OPTIONS.map((u) => (
+                      <option key={u.value} value={u.value}>
+                        {u.label}
+                      </option>
+                    ))}
+                  </select>
+                </FormField>
+              </div>
+
+              <FormField
+                label="Bundle label"
+                error={form.formState.errors.bundleLabel?.message}
+                id="bundleLabel"
+              >
+                <Input
+                  placeholder="e.g. case, sack, carton, pack"
+                  {...form.register("bundleLabel")}
+                />
+                <p className="mt-1.5 text-xs text-slate-500">
+                  Shown to buyers. Defaults to "bundle" if left blank.
+                </p>
+              </FormField>
+
+              {bundleSize && innerUomDef && (
+                <div className="rounded-lg bg-white border border-violet-200 px-3 py-2 text-xs text-violet-800">
+                  Each {bundleLabel?.trim() || "bundle"} contains{" "}
+                  <strong>
+                    {bundleSize} × {innerUomDef.short}
+                  </strong>
+                </div>
+              )}
+            </div>
+          )}
+
           <div className="grid gap-4 sm:grid-cols-2">
-            <FormField label="Price (PKR)" required error={form.formState.errors.price?.message} id="price">
-              <Input type="number" step="0.01" min={0} placeholder="0.00" {...form.register("price")} />
+            <FormField
+              label={`${priceUnitLabel} (PKR)`}
+              required
+              error={form.formState.errors.price?.message}
+              id="price"
+            >
+              <Input
+                type="number"
+                step="0.01"
+                min={0}
+                placeholder="0.00"
+                {...form.register("price")}
+              />
             </FormField>
-            <FormField label="Stock" required error={form.formState.errors.stock?.message} id="stock">
-              <Input type="number" min={0} placeholder="0" {...form.register("stock")} />
+            <FormField
+              label={stockLabel}
+              required
+              error={form.formState.errors.stock?.message}
+              id="stock"
+            >
+              <Input
+                type="number"
+                min={0}
+                step={uomDef.step}
+                placeholder={stockPlaceholder}
+                {...form.register("stock")}
+              />
             </FormField>
           </div>
 
@@ -193,7 +372,10 @@ export function MerchantProductFormPage() {
             {images.length > 0 ? (
               <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
                 {images.map((url, i) => (
-                  <div key={url} className="group relative aspect-square overflow-hidden rounded-xl border border-slate-200 bg-slate-100">
+                  <div
+                    key={url}
+                    className="group relative aspect-square overflow-hidden rounded-xl border border-slate-200 bg-slate-100"
+                  >
                     <img src={url} alt="" className="h-full w-full object-cover" />
                     <button
                       type="button"
@@ -223,7 +405,11 @@ export function MerchantProductFormPage() {
               disabled={form.formState.isSubmitting || uploading}
               className="min-h-[48px] flex-1 rounded-2xl bg-primary font-semibold text-white shadow-lg shadow-primary/25 hover:shadow-primary/35 hover:bg-orange-600 transition-all touch-manipulation disabled:opacity-50"
             >
-              {form.formState.isSubmitting ? "Saving…" : isEdit ? "Update product" : "Add product"}
+              {form.formState.isSubmitting
+                ? "Saving…"
+                : isEdit
+                  ? "Update product"
+                  : "Add product"}
             </button>
             <button
               type="button"

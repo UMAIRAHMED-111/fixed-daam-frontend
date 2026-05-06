@@ -3,6 +3,7 @@ import { Search, Package, Clock, CheckCircle2, Truck, XCircle } from "lucide-rea
 import { useAuthStore } from "@/stores/authStore";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
+import { formatQuantity } from "../data/uomData";
 
 const STATUS_TABS = [
   { id: "all", label: "All" },
@@ -264,7 +265,7 @@ export function AdminOrdersPage() {
                           <li key={i} className="flex items-center justify-between gap-4 text-sm">
                             <span className="text-slate-700 truncate">
                               {item.name}{" "}
-                              <span className="text-slate-400">× {item.quantity}</span>
+                              <span className="text-slate-400">· {formatQuantity(item.quantity, item)}</span>
                             </span>
                             <span className="shrink-0 text-slate-500">
                               PKR {(item.price * item.quantity).toFixed(2)}

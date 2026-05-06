@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { ShoppingCart, Package, Menu, UserCircle } from "lucide-react";
+import { ShoppingCart, Package, Menu, UserCircle, Store, Users } from "lucide-react";
 import { useAuthStore } from "@/stores/authStore";
 import { useCartStore } from "@/stores/cartStore";
 import { Button } from "@/components/ui/Button";
@@ -21,6 +21,8 @@ export function DashboardNav() {
   const location = useLocation();
   const isOrders = location.pathname === "/dashboard/orders";
   const isAdminOrders = location.pathname === "/dashboard/admin/orders";
+  const isAdminMerchants = location.pathname === "/dashboard/admin/merchants";
+  const isAdminBuyers = location.pathname === "/dashboard/admin/buyers";
   const isInventory = location.pathname.startsWith("/dashboard/inventory");
   const isProfile = location.pathname === "/dashboard/profile";
 
@@ -60,6 +62,28 @@ export function DashboardNav() {
               <Package className="h-4 w-4 shrink-0" aria-hidden />
               Orders
             </Link>
+            {isAdmin && (
+              <>
+                <Link
+                  to="/dashboard/admin/merchants"
+                  className={`rounded-lg px-3 py-2 text-sm font-medium transition min-h-[44px] flex items-center gap-1.5 shrink-0 ${
+                    isAdminMerchants ? "text-primary bg-primary/10" : "text-slate-600 hover:bg-slate-100"
+                  }`}
+                >
+                  <Store className="h-4 w-4 shrink-0" aria-hidden />
+                  Merchants
+                </Link>
+                <Link
+                  to="/dashboard/admin/buyers"
+                  className={`rounded-lg px-3 py-2 text-sm font-medium transition min-h-[44px] flex items-center gap-1.5 shrink-0 ${
+                    isAdminBuyers ? "text-primary bg-primary/10" : "text-slate-600 hover:bg-slate-100"
+                  }`}
+                >
+                  <Users className="h-4 w-4 shrink-0" aria-hidden />
+                  Buyers
+                </Link>
+              </>
+            )}
             {!isMerchant && !isAdmin && (
             <button
               type="button"
@@ -160,6 +184,30 @@ export function DashboardNav() {
                   <Package className="h-4 w-4" />
                   Orders
                 </Link>
+                {isAdmin && (
+                  <>
+                    <Link
+                      to="/dashboard/admin/merchants"
+                      onClick={closeMobileMenu}
+                      className={`min-h-[44px] flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium ${
+                        isAdminMerchants ? "bg-primary/10 text-primary" : "text-slate-700 hover:bg-slate-50"
+                      }`}
+                    >
+                      <Store className="h-4 w-4" />
+                      Merchants
+                    </Link>
+                    <Link
+                      to="/dashboard/admin/buyers"
+                      onClick={closeMobileMenu}
+                      className={`min-h-[44px] flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium ${
+                        isAdminBuyers ? "bg-primary/10 text-primary" : "text-slate-700 hover:bg-slate-50"
+                      }`}
+                    >
+                      <Users className="h-4 w-4" />
+                      Buyers
+                    </Link>
+                  </>
+                )}
                 <Link
                   to="/dashboard/profile"
                   onClick={closeMobileMenu}

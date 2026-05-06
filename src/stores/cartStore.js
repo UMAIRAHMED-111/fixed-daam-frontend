@@ -24,6 +24,10 @@ export const useCartStore = create((set) => ({
               quantity,
               merchantId: product.merchantId ?? null,
               merchantName: product.merchantName ?? null,
+              uom: product.uom ?? "each",
+              bundleSize: product.bundleSize ?? null,
+              bundleUom: product.bundleUom ?? null,
+              bundleLabel: product.bundleLabel ?? "",
             },
           ];
       return { items: newItems };
@@ -31,7 +35,7 @@ export const useCartStore = create((set) => ({
   updateQuantity: (productId, quantity) =>
     set((state) => ({
       items:
-        quantity < 1
+        quantity <= 0
           ? state.items.filter((i) => i.productId !== productId)
           : state.items.map((i) =>
               i.productId === productId ? { ...i, quantity } : i

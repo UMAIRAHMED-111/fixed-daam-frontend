@@ -39,13 +39,21 @@ export const useInventoryStore = create((set, get) => ({
   },
 
   addProduct: async (payload) => {
+    const isInteger = payload.uom !== "kg" && payload.uom !== "l" && payload.uom !== "m";
+    const stock = isInteger
+      ? Math.max(0, Math.floor(Number(payload.stock) || 0))
+      : Math.max(0, Number(payload.stock) || 0);
     const res = await api.post("/v1/products", {
       name: payload.name,
       description: payload.description ?? "",
       price: Number(payload.price),
       category: payload.category,
-      stock: Math.max(0, Math.floor(Number(payload.stock) || 0)),
+      stock,
       images: Array.isArray(payload.images) ? payload.images.filter(Boolean) : [],
+      uom: payload.uom ?? "each",
+      bundleSize: payload.bundleSize ?? null,
+      bundleUom: payload.bundleUom ?? null,
+      bundleLabel: payload.bundleLabel ?? "",
     });
     const product = res.data;
     set((state) => ({ products: [product, ...state.products] }));
@@ -58,8 +66,18 @@ export const useInventoryStore = create((set, get) => ({
     if (payload.description !== undefined) body.description = payload.description;
     if (payload.price != null) body.price = Number(payload.price);
     if (payload.category !== undefined) body.category = payload.category;
-    if (payload.stock != null) body.stock = Math.max(0, Math.floor(Number(payload.stock)));
+    if (payload.stock != null) {
+      const isInteger =
+        payload.uom !== "kg" && payload.uom !== "l" && payload.uom !== "m";
+      body.stock = isInteger
+        ? Math.max(0, Math.floor(Number(payload.stock)))
+        : Math.max(0, Number(payload.stock));
+    }
     if (Array.isArray(payload.images)) body.images = payload.images.filter(Boolean);
+    if (payload.uom !== undefined) body.uom = payload.uom;
+    if (payload.bundleSize !== undefined) body.bundleSize = payload.bundleSize;
+    if (payload.bundleUom !== undefined) body.bundleUom = payload.bundleUom;
+    if (payload.bundleLabel !== undefined) body.bundleLabel = payload.bundleLabel;
 
     const res = await api.patch(`/v1/products/${id}`, body);
     const updated = res.data;

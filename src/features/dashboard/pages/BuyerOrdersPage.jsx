@@ -64,7 +64,8 @@ export function BuyerOrdersPage() {
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-slate-900">My Orders</h1>
           <p className="mt-1 text-sm text-slate-600">
-            Your locked-in prices. Show the QR code when collecting.
+            Your locked-in prices. Show the rotating pickup code at the store —
+            you can collect partial quantities across multiple visits.
           </p>
         </div>
 
@@ -139,7 +140,7 @@ export function BuyerOrdersPage() {
             <span className="inline-block h-2 w-2 shrink-0 rounded-full bg-emerald-500 animate-pulse" />
             <span>
               <strong>{counts.ready}</strong> order{counts.ready > 1 ? "s are" : " is"} ready for
-              pickup — show your QR code at the store!
+              pickup — show your rotating code at the store!
             </span>
           </div>
         )}

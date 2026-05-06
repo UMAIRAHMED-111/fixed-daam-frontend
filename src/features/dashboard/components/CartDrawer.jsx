@@ -1,9 +1,14 @@
 import { useState, useRef } from "react";
 import { Link } from "react-router-dom";
-import { X, Upload, ImageIcon } from "lucide-react";
+import { X, Upload, Package } from "lucide-react";
 import { useCartStore } from "@/stores/cartStore";
 import { useOrdersStore } from "@/stores/ordersStore";
 import { toast } from "sonner";
+import {
+  getUom,
+  formatUomSuffix,
+  formatQuantity,
+} from "@/features/dashboard/data/uomData";
 
 export function CartDrawer({ open, onClose }) {
   const items = useCartStore((s) => s.items);
@@ -104,35 +109,69 @@ export function CartDrawer({ open, onClose }) {
             <p className="py-8 text-center text-slate-500">Your cart is empty.</p>
           ) : (
             <ul className="space-y-4">
-              {items.map((item) => (
-                <li key={item.productId} className="flex gap-4 rounded-xl border border-slate-100 bg-slate-50/50 p-3">
-                  <img
-                    src={item.image}
-                    alt=""
-                    className="h-20 w-20 shrink-0 rounded-lg object-cover"
-                  />
-                  <div className="min-w-0 flex-1">
-                    <p className="font-medium text-slate-900 truncate">{item.name}</p>
-                    <p className="text-sm text-slate-600">PKR {Number(item.price).toFixed(2)} each</p>
-                    <div className="mt-2 flex items-center gap-2">
-                      <input
-                        type="number"
-                        min={1}
-                        value={item.quantity}
-                        onChange={(e) => updateQuantity(item.productId, Number(e.target.value) || 1)}
-                        className="min-h-[44px] w-14 rounded border border-slate-200 px-2 py-2 text-base touch-manipulation"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => removeItem(item.productId)}
-                        className="min-h-[44px] inline-flex items-center rounded-lg px-3 text-sm text-red-600 hover:bg-red-50 hover:underline touch-manipulation"
-                      >
-                        Remove
-                      </button>
+              {items.map((item) => {
+                const uomDef = getUom(item.uom);
+                const isBundle = item.uom === "bundle";
+                const innerUom = isBundle && item.bundleUom ? getUom(item.bundleUom) : null;
+                const priceSuffix = formatUomSuffix(item);
+                return (
+                  <li key={item.productId} className="flex gap-4 rounded-xl border border-slate-100 bg-slate-50/50 p-3">
+                    <img
+                      src={item.image}
+                      alt=""
+                      className="h-20 w-20 shrink-0 rounded-lg object-cover"
+                    />
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium text-slate-900 truncate">{item.name}</p>
+                      {isBundle && (
+                        <p className="mt-0.5 inline-flex items-center gap-1 rounded-full bg-violet-100 px-2 py-0.5 text-[11px] font-semibold text-violet-700">
+                          <Package className="h-3 w-3" />
+                          {item.bundleLabel?.trim() || "Bundle"}
+                          {item.bundleSize && innerUom && (
+                            <span className="opacity-90">
+                              · {item.bundleSize} {innerUom.short}
+                            </span>
+                          )}
+                        </p>
+                      )}
+                      <p className="text-sm text-slate-600">
+                        PKR {Number(item.price).toFixed(2)}
+                        {priceSuffix && (
+                          <span className="text-xs text-slate-500"> {priceSuffix}</span>
+                        )}
+                      </p>
+                      <div className="mt-2 flex items-center gap-2">
+                        <input
+                          type="number"
+                          inputMode={uomDef.integer ? "numeric" : "decimal"}
+                          min={uomDef.step}
+                          step={uomDef.step}
+                          value={item.quantity}
+                          onChange={(e) => {
+                            const n = Number(e.target.value);
+                            if (!Number.isFinite(n)) return;
+                            updateQuantity(
+                              item.productId,
+                              uomDef.integer ? Math.max(0, Math.floor(n)) : Math.max(0, n)
+                            );
+                          }}
+                          className="min-h-[44px] w-20 rounded border border-slate-200 px-2 py-2 text-base touch-manipulation"
+                        />
+                        <span className="text-xs text-slate-500">
+                          {formatQuantity(item.quantity, item)}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => removeItem(item.productId)}
+                          className="min-h-[44px] ml-auto inline-flex items-center rounded-lg px-3 text-sm text-red-600 hover:bg-red-50 hover:underline touch-manipulation"
+                        >
+                          Remove
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                </li>
-              ))}
+                  </li>
+                );
+              })}
             </ul>
           )}
         </div>

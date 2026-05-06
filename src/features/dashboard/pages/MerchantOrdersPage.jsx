@@ -1,8 +1,27 @@
-import { useEffect, useState, useMemo, useCallback } from "react";
-import { Search, Package, Clock, CheckCircle2, Truck, XCircle, KeyRound } from "lucide-react";
+import { useEffect, useState, useMemo, useCallback, useRef } from "react";
+import {
+  Search,
+  Package,
+  Clock,
+  CheckCircle2,
+  Truck,
+  XCircle,
+  KeyRound,
+  ScanLine,
+} from "lucide-react";
 import { useAuthStore } from "@/stores/authStore";
 import { useOrdersStore } from "@/stores/ordersStore";
 import { toast } from "sonner";
+import {
+  formatQuantity,
+  getDeliverableTotal,
+  getDeliverableUomShort,
+  isDeliverableInteger,
+  getDeliverableStep,
+  getRemainingDeliverable,
+  formatDeliverableQty,
+  getUom,
+} from "../data/uomData";
 
 const STATUS_TABS = [
   { id: "all", label: "All" },
@@ -30,16 +49,261 @@ function StatusBadge({ status }) {
   );
 }
 
+const formatNum = (n) => {
+  const num = Number(n) || 0;
+  return Number.isInteger(num) ? String(num) : Number(num.toFixed(3)).toString();
+};
+
+/**
+ * Inline pickup panel — lets the merchant dispense partial quantities
+ * against the buyer's live TOTP code.
+ */
+function PickupPanel({ order, merchantId, initialCode = "" }) {
+  const fulfillOrder = useOrdersStore((s) => s.fulfillOrder);
+
+  // Track each merchant-owned item by its index in the order.
+  const merchantItems = useMemo(
+    () =>
+      order.items
+        .map((item, idx) => ({ item, idx }))
+        .filter(
+          ({ item }) =>
+            item.merchantId && String(item.merchantId) === String(merchantId)
+        ),
+    [order.items, merchantId]
+  );
+
+  const buildInitialQty = useCallback(
+    () =>
+      merchantItems.reduce((acc, { item, idx }) => {
+        const remaining = getRemainingDeliverable(item);
+        // Default: prefill the remaining qty so "give all" is one click away.
+        acc[idx] = remaining > 0 ? formatNum(remaining) : "0";
+        return acc;
+      }, {}),
+    [merchantItems]
+  );
+
+  const [qty, setQty] = useState(buildInitialQty);
+  const [code, setCode] = useState(initialCode);
+  const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  // Reset prefill when the order's delivered counts change (e.g. after a partial pickup).
+  useEffect(() => {
+    setQty(buildInitialQty());
+  }, [buildInitialQty]);
+
+  // External code entered upstream (top form) — prefill once.
+  useEffect(() => {
+    if (initialCode) setCode(initialCode);
+  }, [initialCode]);
+
+  const allRemaining = merchantItems.every(
+    ({ item }) => getRemainingDeliverable(item) <= 1e-6
+  );
+
+  const handleChange = (idx, value) => {
+    setQty((prev) => ({ ...prev, [idx]: value }));
+    setError("");
+  };
+
+  const setMax = (idx, item) => {
+    const remaining = getRemainingDeliverable(item);
+    setQty((prev) => ({ ...prev, [idx]: formatNum(remaining) }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!/^\d{6}$/.test(code)) {
+      setError("Enter the 6-digit code from the buyer");
+      return;
+    }
+    const pickups = [];
+    for (const { item, idx } of merchantItems) {
+      const raw = qty[idx];
+      const n = Number(raw);
+      if (raw === "" || !Number.isFinite(n) || n < 0) {
+        setError("Enter a valid quantity for every item");
+        return;
+      }
+      if (n === 0) continue;
+      const remaining = getRemainingDeliverable(item);
+      if (n > remaining + 1e-6) {
+        setError(
+          `${item.name}: only ${formatDeliverableQty(remaining, item)} remaining`
+        );
+        return;
+      }
+      pickups.push({ itemIndex: idx, quantity: n });
+    }
+    if (pickups.length === 0) {
+      setError("Enter at least one item to dispense");
+      return;
+    }
+
+    setSubmitting(true);
+    setError("");
+    try {
+      const updated = await fulfillOrder(order.id, code, pickups);
+      const stillRemaining = updated.items.some(
+        (item) =>
+          item.merchantId &&
+          String(item.merchantId) === String(merchantId) &&
+          getRemainingDeliverable(item) > 1e-6
+      );
+      if (stillRemaining) {
+        toast.success("Pickup recorded. Buyer can collect the rest later.");
+      } else if (updated.status === "delivered") {
+        toast.success("Pickup complete — order fully delivered.");
+      } else {
+        toast.success("Pickup recorded for your items.");
+      }
+      // Clear the code so the merchant has to ask the buyer for a fresh one next time.
+      setCode("");
+    } catch (err) {
+      const msg = err.response?.data?.message || "Failed to record pickup";
+      setError(msg);
+      toast.error(msg);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  if (allRemaining) {
+    return (
+      <div className="border-t border-slate-100 bg-emerald-50/50 px-5 py-4">
+        <p className="text-sm font-medium text-emerald-800 flex items-center gap-2">
+          <CheckCircle2 className="h-4 w-4" />
+          You've dispensed all of your items in this order.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <form
+      onSubmit={handleSubmit}
+      className="border-t border-slate-100 bg-slate-50/60 px-5 py-4 space-y-4"
+    >
+      <div className="flex items-center gap-2 text-sm font-semibold text-slate-800">
+        <ScanLine className="h-4 w-4 text-primary" />
+        Record pickup
+      </div>
+
+      <ul className="space-y-3">
+        {merchantItems.map(({ item, idx }) => {
+          const total = getDeliverableTotal(item);
+          const delivered = Number(item.quantityDelivered || 0);
+          const remaining = Math.max(0, total - delivered);
+          const unit = getDeliverableUomShort(item);
+          const step = getDeliverableStep(item);
+          const integer = isDeliverableInteger(item);
+          const innerUom = item.uom === "bundle" && item.bundleUom ? getUom(item.bundleUom) : null;
+          const progress = total > 0 ? Math.min(1, delivered / total) : 0;
+
+          return (
+            <li
+              key={idx}
+              className="rounded-xl border border-slate-200 bg-white p-3"
+            >
+              <div className="flex flex-wrap items-baseline justify-between gap-2">
+                <p className="font-medium text-slate-800 truncate">
+                  {item.name}
+                  {item.uom === "bundle" && item.bundleSize && innerUom && (
+                    <span className="ml-2 text-xs font-normal text-slate-500">
+                      ({item.quantity} × {item.bundleSize} {innerUom.short})
+                    </span>
+                  )}
+                </p>
+                <p className="text-xs text-slate-500">
+                  {formatDeliverableQty(delivered, item)} / {formatDeliverableQty(total, item)} given
+                </p>
+              </div>
+
+              <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
+                <div
+                  className="h-full bg-emerald-500 transition-[width] duration-300"
+                  style={{ width: `${progress * 100}%` }}
+                />
+              </div>
+
+              {remaining <= 1e-6 ? (
+                <p className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-emerald-700">
+                  <CheckCircle2 className="h-3 w-3" />
+                  All dispensed
+                </p>
+              ) : (
+                <div className="mt-3 flex flex-wrap items-center gap-2">
+                  <label className="text-xs font-medium text-slate-600">
+                    Give now
+                  </label>
+                  <input
+                    type="number"
+                    inputMode={integer ? "numeric" : "decimal"}
+                    min={0}
+                    max={remaining}
+                    step={step}
+                    value={qty[idx] ?? ""}
+                    onChange={(e) => handleChange(idx, e.target.value)}
+                    className="min-h-[44px] w-24 rounded-lg border border-slate-200 px-3 py-2 text-base text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary touch-manipulation"
+                  />
+                  <span className="text-xs text-slate-500">{unit}</span>
+                  <button
+                    type="button"
+                    onClick={() => setMax(idx, item)}
+                    className="ml-1 rounded-md border border-slate-200 px-2 py-1 text-[11px] font-medium text-slate-600 hover:bg-slate-50"
+                  >
+                    Max ({formatDeliverableQty(remaining, item)})
+                  </button>
+                </div>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+
+      <div>
+        <label className="block text-xs font-medium text-slate-600 mb-1.5">
+          Buyer's 6-digit pickup code
+        </label>
+        <input
+          type="text"
+          inputMode="numeric"
+          maxLength={6}
+          placeholder="••••••"
+          value={code}
+          onChange={(e) => {
+            setCode(e.target.value.replace(/\D/g, ""));
+            setError("");
+          }}
+          className="min-h-[44px] w-full rounded-lg border border-slate-200 px-4 py-2 text-center text-xl font-bold font-mono tracking-widest text-slate-900 placeholder:text-slate-300 placeholder:text-base placeholder:font-normal placeholder:tracking-normal focus:outline-none focus:ring-2 focus:ring-primary"
+        />
+      </div>
+
+      {error && <p className="text-sm text-red-600">{error}</p>}
+
+      <div className="flex flex-wrap gap-2">
+        <button
+          type="submit"
+          disabled={submitting}
+          className="min-h-[44px] flex-1 rounded-2xl bg-primary px-4 text-sm font-semibold text-white shadow-lg shadow-primary/25 hover:bg-orange-600 transition-all touch-manipulation disabled:opacity-60"
+        >
+          {submitting ? "Recording…" : "Confirm pickup"}
+        </button>
+      </div>
+    </form>
+  );
+}
+
 export function MerchantOrdersPage() {
   const user = useAuthStore((s) => s.user);
   const merchantId = user?.id;
   const orders = useOrdersStore((s) => s.getOrdersForMerchant(merchantId));
   const fetchOrders = useOrdersStore((s) => s.fetchOrders);
   const markReady = useOrdersStore((s) => s.markReady);
-  const markDelivered = useOrdersStore((s) => s.markDelivered);
-  const loading = useOrdersStore((s) => s.loading);
-
   const validateCode = useOrdersStore((s) => s.validateCode);
+  const loading = useOrdersStore((s) => s.loading);
 
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -47,9 +311,13 @@ export function MerchantOrdersPage() {
   const [lightboxSrc, setLightboxSrc] = useState(null);
 
   const [codeInput, setCodeInput] = useState("");
-  const [codeResult, setCodeResult] = useState(null);
   const [codeError, setCodeError] = useState("");
   const [codeLoading, setCodeLoading] = useState(false);
+
+  // Which order's pickup panel is currently expanded, plus the code that opened it.
+  const [pickupOpenId, setPickupOpenId] = useState(null);
+  const [pickupCodePrefill, setPickupCodePrefill] = useState("");
+  const orderRefs = useRef({});
 
   useEffect(() => {
     fetchOrders();
@@ -61,8 +329,6 @@ export function MerchantOrdersPage() {
     (order) => order.items.filter((i) => i.merchantId === merchantId),
     [merchantId]
   );
-
-
 
   const counts = useMemo(
     () => ({
@@ -106,32 +372,34 @@ export function MerchantOrdersPage() {
     }
   };
 
-  const handleMarkDelivered = async (orderId) => {
-    setActionLoading(orderId + "-delivered");
-    try {
-      await markDelivered(orderId);
-      toast.success("Order marked as delivered.");
-    } catch (err) {
-      toast.error(err.response?.data?.message || "Failed to update order");
-    } finally {
-      setActionLoading(null);
-    }
-  };
-
   const handleCodeValidate = async (e) => {
     e.preventDefault();
     const code = codeInput.trim();
     if (!/^\d{6}$/.test(code)) {
       setCodeError("Enter a valid 6-digit code");
-      setCodeResult(null);
       return;
     }
     setCodeLoading(true);
     setCodeError("");
-    setCodeResult(null);
     try {
       const order = await validateCode(code);
-      setCodeResult(order);
+      if (order.status !== "ready") {
+        setCodeError(
+          `Order found, but it's "${order.status.replace("_", " ")}", not ready for pickup.`
+        );
+        return;
+      }
+      // Make sure the matching order is visible, then auto-open its pickup panel.
+      setStatusFilter("all");
+      setSearch("");
+      setPickupOpenId(order.id);
+      setPickupCodePrefill(code);
+      setCodeInput("");
+      // Scroll to the order card after the next paint.
+      setTimeout(() => {
+        const el = orderRefs.current[order.id];
+        if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+      }, 50);
     } catch (err) {
       setCodeError(err.response?.data?.message || "Code not found");
     } finally {
@@ -149,20 +417,22 @@ export function MerchantOrdersPage() {
   return (
     <div className="min-h-[calc(100vh-4rem)] bg-slate-50">
       <div className="mx-auto max-w-4xl px-4 py-6 sm:px-6 lg:px-8">
-        {/* Header */}
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-slate-900">Orders</h1>
           <p className="mt-1 text-sm text-slate-600">
-            Verify payments and manage orders for your products.
+            Verify payments, prepare orders, and dispense items at pickup.
           </p>
         </div>
 
-        {/* Code validator */}
+        {/* Quick lookup by code */}
         <div className="mb-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <div className="flex items-center gap-2 mb-3">
             <KeyRound className="h-4 w-4 text-primary" />
-            <h2 className="text-sm font-semibold text-slate-800">Validate Customer Code</h2>
+            <h2 className="text-sm font-semibold text-slate-800">Buyer at the counter?</h2>
           </div>
+          <p className="mb-3 text-xs text-slate-500">
+            Type their 6-digit pickup code to jump straight to the order.
+          </p>
           <form onSubmit={handleCodeValidate} className="flex gap-2">
             <input
               type="text"
@@ -170,7 +440,10 @@ export function MerchantOrdersPage() {
               maxLength={6}
               placeholder="6-digit code"
               value={codeInput}
-              onChange={(e) => { setCodeInput(e.target.value.replace(/\D/g, "")); setCodeError(""); setCodeResult(null); }}
+              onChange={(e) => {
+                setCodeInput(e.target.value.replace(/\D/g, ""));
+                setCodeError("");
+              }}
               className="flex-1 min-h-[44px] rounded-xl border border-slate-200 px-4 text-center text-xl font-bold font-mono tracking-widest text-slate-900 placeholder:text-slate-300 placeholder:text-base placeholder:font-normal placeholder:tracking-normal focus:outline-none focus:ring-2 focus:ring-primary"
             />
             <button
@@ -178,31 +451,10 @@ export function MerchantOrdersPage() {
               disabled={codeLoading || codeInput.length !== 6}
               className="min-h-[44px] rounded-xl bg-primary px-5 text-sm font-semibold text-white shadow-lg shadow-primary/25 hover:bg-orange-600 transition-all disabled:opacity-50"
             >
-              {codeLoading ? "Checking…" : "Validate"}
+              {codeLoading ? "Checking…" : "Find order"}
             </button>
           </form>
-          {codeError && (
-            <p className="mt-2 text-sm text-red-600">{codeError}</p>
-          )}
-          {codeResult && (
-            <div className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3">
-              <p className="text-sm font-semibold text-emerald-800">
-                Valid — {codeResult.buyerName || codeResult.buyerEmail}
-              </p>
-              <ul className="mt-1 space-y-0.5">
-                {codeResult.items
-                  .filter((i) => i.merchantId === merchantId)
-                  .map((item, idx) => (
-                    <li key={idx} className="text-xs text-emerald-700">
-                      {item.name} × {item.quantity} — PKR {(item.price * item.quantity).toFixed(2)}
-                    </li>
-                  ))}
-              </ul>
-              <p className="mt-1 text-xs text-emerald-600 capitalize">
-                Status: {codeResult.status.replace("_", " ")}
-              </p>
-            </div>
-          )}
+          {codeError && <p className="mt-2 text-sm text-red-600">{codeError}</p>}
         </div>
 
         {/* Stats */}
@@ -218,18 +470,16 @@ export function MerchantOrdersPage() {
           ))}
         </div>
 
-        {/* Pending payment alert */}
         {counts.pending_verification > 0 && (
           <div className="mb-3 flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
             <span className="inline-block h-2 w-2 shrink-0 rounded-full bg-amber-500 animate-pulse" />
             <span>
-              <strong>{counts.pending_verification}</strong> order{counts.pending_verification > 1 ? "s are" : " is"} awaiting
-              payment verification.
+              <strong>{counts.pending_verification}</strong> order
+              {counts.pending_verification > 1 ? "s are" : " is"} awaiting payment verification.
             </span>
           </div>
         )}
 
-        {/* New order alert */}
         {counts.locked > 0 && (
           <div className="mb-3 flex items-center gap-3 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800">
             <span className="inline-block h-2 w-2 shrink-0 rounded-full bg-blue-500 animate-pulse" />
@@ -299,11 +549,27 @@ export function MerchantOrdersPage() {
               const items = getMyItems(order);
               const isPending = order.status === "pending_verification";
               const isRejected = order.status === "rejected";
+              const isReady = order.status === "ready";
+              const isDelivered = order.status === "delivered";
               const isReadyLoading = actionLoading === order.id + "-ready";
-              const isDeliveredLoading = actionLoading === order.id + "-delivered";
+              const pickupOpen = pickupOpenId === order.id;
+
+              const myRemaining = items.reduce(
+                (sum, item) => sum + getRemainingDeliverable(item),
+                0
+              );
 
               return (
-                <li key={order.id} className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+                <li
+                  key={order.id}
+                  ref={(el) => {
+                    if (el) orderRefs.current[order.id] = el;
+                    else delete orderRefs.current[order.id];
+                  }}
+                  className={`overflow-hidden rounded-2xl border bg-white shadow-sm ${
+                    pickupOpen ? "border-primary ring-2 ring-primary/20" : "border-slate-200"
+                  }`}
+                >
                   {/* Order header */}
                   <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 bg-slate-50 px-5 py-3">
                     <div className="flex flex-wrap items-center gap-2">
@@ -322,7 +588,6 @@ export function MerchantOrdersPage() {
 
                   {/* Content */}
                   <div className="flex flex-col gap-5 p-5 sm:flex-row sm:items-start sm:justify-between">
-                    {/* Left: buyer + items */}
                     <div className="flex-1 min-w-0">
                       {(order.buyerName || order.buyerEmail) && (
                         <div className="mb-4">
@@ -345,16 +610,42 @@ export function MerchantOrdersPage() {
 
                       <p className="mb-1.5 text-xs font-medium text-slate-400 uppercase tracking-wide">Items</p>
                       <ul className="space-y-1.5">
-                        {items.map((item, i) => (
-                          <li key={i} className="flex items-center justify-between gap-4 text-sm">
-                            <span className="text-slate-700 truncate">
-                              {item.name} <span className="text-slate-400">× {item.quantity}</span>
-                            </span>
-                            <span className="shrink-0 text-slate-600 font-medium">
-                              PKR {(item.price * item.quantity).toLocaleString()}
-                            </span>
-                          </li>
-                        ))}
+                        {items.map((item, i) => {
+                          const total = getDeliverableTotal(item);
+                          const delivered = Number(item.quantityDelivered || 0);
+                          const remaining = Math.max(0, total - delivered);
+                          const fullyDelivered = remaining <= 1e-6;
+                          return (
+                            <li key={i} className="text-sm">
+                              <div className="flex items-center justify-between gap-4">
+                                <span className="text-slate-700 truncate">
+                                  {item.name}{" "}
+                                  <span className="text-slate-400">· {formatQuantity(item.quantity, item)}</span>
+                                </span>
+                                <span className="shrink-0 text-slate-600 font-medium">
+                                  PKR {(item.price * item.quantity).toLocaleString()}
+                                </span>
+                              </div>
+                              {(isReady || isDelivered) && total > 0 && (
+                                <div className="mt-1 flex items-center gap-2">
+                                  <div className="h-1 flex-1 overflow-hidden rounded-full bg-slate-100">
+                                    <div
+                                      className="h-full bg-emerald-500"
+                                      style={{ width: `${Math.min(100, (delivered / total) * 100)}%` }}
+                                    />
+                                  </div>
+                                  <span
+                                    className={`text-[11px] font-medium ${
+                                      fullyDelivered ? "text-emerald-700" : "text-slate-500"
+                                    }`}
+                                  >
+                                    {formatDeliverableQty(delivered, item)} / {formatDeliverableQty(total, item)}
+                                  </span>
+                                </div>
+                              )}
+                            </li>
+                          );
+                        })}
                       </ul>
 
                       {order.total != null && (
@@ -373,7 +664,7 @@ export function MerchantOrdersPage() {
                       )}
                     </div>
 
-                    {/* Right: payment proof (pending) or QR + actions (approved) */}
+                    {/* Right column */}
                     <div className="flex shrink-0 flex-col items-center gap-3">
                       {isPending && order.paymentProof && (
                         <div>
@@ -394,8 +685,8 @@ export function MerchantOrdersPage() {
                           </button>
                         </div>
                       )}
-                      {/* show image of the product */}
-                      <div className="w-28 h-28 bg-slate-100 rounded-xl overflow-hidden border border-slate-200">
+
+                      <div className="w-28 h-28 bg-slate-100 rounded-xl overflow-hidden border border-slate-200 flex items-center justify-center">
                         {items[0]?.image ? (
                           <img
                             src={items[0].image}
@@ -406,7 +697,6 @@ export function MerchantOrdersPage() {
                           <Package className="h-10 w-10 text-slate-300" aria-hidden />
                         )}
                       </div>
-                    
 
                       {order.status === "locked" && (
                         <button
@@ -419,18 +709,32 @@ export function MerchantOrdersPage() {
                         </button>
                       )}
 
-                      {order.status === "ready" && (
+                      {isReady && myRemaining > 0 && (
                         <button
                           type="button"
-                          onClick={() => handleMarkDelivered(order.id)}
-                          disabled={isDeliveredLoading}
-                          className="w-full min-h-[44px] rounded-2xl bg-emerald-600 px-4 text-sm font-semibold text-white shadow-lg shadow-emerald-600/20 hover:bg-emerald-700 transition-all touch-manipulation disabled:opacity-60"
+                          onClick={() => {
+                            if (pickupOpen) {
+                              setPickupOpenId(null);
+                              setPickupCodePrefill("");
+                            } else {
+                              setPickupOpenId(order.id);
+                              setPickupCodePrefill("");
+                            }
+                          }}
+                          className="w-full min-h-[44px] rounded-2xl bg-emerald-600 px-4 text-sm font-semibold text-white shadow-lg shadow-emerald-600/20 hover:bg-emerald-700 transition-all touch-manipulation"
                         >
-                          {isDeliveredLoading ? "Updating…" : "Mark delivered"}
+                          {pickupOpen ? "Close pickup" : "Open pickup"}
                         </button>
                       )}
 
-                      {order.status === "delivered" && (
+                      {isReady && myRemaining <= 1e-6 && (
+                        <span className="rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-medium text-emerald-700 flex items-center gap-1">
+                          <CheckCircle2 className="h-3.5 w-3.5" />
+                          Your items dispensed
+                        </span>
+                      )}
+
+                      {isDelivered && (
                         <span className="rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-medium text-emerald-700">
                           Collected
                         </span>
@@ -452,6 +756,14 @@ export function MerchantOrdersPage() {
                       </p>
                     </div>
                   )}
+
+                  {isReady && pickupOpen && (
+                    <PickupPanel
+                      order={order}
+                      merchantId={merchantId}
+                      initialCode={pickupCodePrefill}
+                    />
+                  )}
                 </li>
               );
             })}
@@ -459,8 +771,7 @@ export function MerchantOrdersPage() {
         )}
       </div>
 
-      {/* Payment proof lightbox */}
-      {/* {lightboxSrc && (
+      {lightboxSrc && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
           onClick={() => setLightboxSrc(null)}
@@ -472,7 +783,7 @@ export function MerchantOrdersPage() {
             onClick={(e) => e.stopPropagation()}
           />
         </div>
-      )} */}
+      )}
     </div>
   );
 }

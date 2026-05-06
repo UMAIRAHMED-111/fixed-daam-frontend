@@ -1,11 +1,16 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ChevronLeft, ChevronRight, Upload, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Upload, X, Package } from "lucide-react";
 import { useInventoryStore } from "@/stores/inventoryStore";
 import { useCartStore } from "@/stores/cartStore";
 import { useOrdersStore } from "@/stores/ordersStore";
 import { toast } from "sonner";
 import { api } from "@/lib/api";
+import {
+  getUom,
+  formatUomSuffix,
+  formatQuantity,
+} from "../data/uomData";
 
 export function ProductDetailPage() {
   const { id } = useParams();
@@ -13,7 +18,7 @@ export function ProductDetailPage() {
   const inventoryProducts = useInventoryStore((s) => s.products);
   const [product, setProduct] = useState(() => inventoryProducts.find((p) => p.id === id) ?? null);
   const [slideIndex, setSlideIndex] = useState(0);
-  const [quantity, setQuantity] = useState(1);
+  const [quantity, setQuantity] = useState("1");
   const [showOrderSuccess, setShowOrderSuccess] = useState(null);
   const [orderLoading, setOrderLoading] = useState(false);
   const [paymentFile, setPaymentFile] = useState(null);
@@ -33,6 +38,14 @@ export function ProductDetailPage() {
     }
   }, [id, product]);
 
+  // Helpers (safe to call before product check, but only used after)
+  const uomDef = product ? getUom(product.uom) : null;
+  const parseQty = () => {
+    const n = Number(quantity);
+    if (!Number.isFinite(n) || n <= 0) return 0;
+    return uomDef?.integer ? Math.floor(n) : Number(n.toFixed(3));
+  };
+
   if (!product) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center px-4 gap-3">
@@ -50,11 +63,21 @@ export function ProductDetailPage() {
   }
 
   const images = product.images?.length ? product.images : ["https://picsum.photos/seed/placeholder/800/600"];
+  const isBundle = product.uom === "bundle";
+  const innerUom = isBundle && product.bundleUom ? getUom(product.bundleUom) : null;
+  const priceSuffix = formatUomSuffix(product);
+  const qtyParsed = parseQty();
+  const previewTotal = qtyParsed * Number(product.price || 0);
   const goPrev = () => setSlideIndex((i) => (i <= 0 ? images.length - 1 : i - 1));
   const goNext = () => setSlideIndex((i) => (i >= images.length - 1 ? 0 : i + 1));
 
   const handleAddToCart = () => {
-    addItem(product, quantity);
+    const qty = parseQty();
+    if (qty <= 0) {
+      toast.error("Enter a valid quantity");
+      return;
+    }
+    addItem(product, qty);
     toast.success("Added to cart");
   };
 
@@ -70,9 +93,17 @@ export function ProductDetailPage() {
       toast.error("Please upload your proof of payment before placing the order.");
       return;
     }
+    const qty = parseQty();
+    if (qty <= 0) {
+      toast.error("Enter a valid quantity");
+      return;
+    }
     setOrderLoading(true);
     try {
-      const order = await addOrder([{ productId: product.id, quantity }], paymentFile);
+      const order = await addOrder(
+        [{ productId: product.id, quantity: qty }],
+        paymentFile
+      );
       setShowOrderSuccess(order);
       toast.success("Order placed! Your price is locked.");
     } catch (err) {
@@ -171,21 +202,119 @@ export function ProductDetailPage() {
           </div>
           {/* Info + actions */}
           <div className="flex-1 max-w-lg">
-            <span className="text-sm font-medium text-primary">{product.category}</span>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-sm font-medium text-primary">{product.category}</span>
+              {isBundle ? (
+                <span className="inline-flex items-center gap-1 rounded-full bg-violet-100 px-2.5 py-0.5 text-xs font-semibold text-violet-700">
+                  <Package className="h-3 w-3" />
+                  {product.bundleLabel?.trim() || "Bundle"}
+                </span>
+              ) : product.uom && product.uom !== "each" ? (
+                <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-700">
+                  Sold per {uomDef.short}
+                </span>
+              ) : null}
+            </div>
             <h1 className="mt-1 text-2xl font-bold text-slate-900 sm:text-3xl">{product.name}</h1>
             <p className="mt-2 text-slate-600">{product.description}</p>
-            <p className="mt-4 text-2xl font-bold text-slate-900">PKR {Number(product.price).toFixed(2)}</p>
+            <p className="mt-4 text-2xl font-bold text-slate-900">
+              PKR {Number(product.price).toFixed(2)}
+              {priceSuffix && (
+                <span className="ml-1 text-sm font-medium text-slate-500">
+                  {priceSuffix}
+                </span>
+              )}
+            </p>
             <p className="mt-1 text-sm text-slate-500">Sold by {product.merchantName ?? "Store"}</p>
-            <div className="mt-6 flex items-center gap-4">
-              <label className="text-sm font-medium text-slate-700">Quantity</label>
-              <input
-                type="number"
-                min={1}
-                max={product.stock}
-                value={quantity}
-                onChange={(e) => setQuantity(Math.max(1, Math.min(product.stock, Number(e.target.value) || 1)))}
-                className="w-20 min-h-[44px] rounded-lg border border-slate-200 px-3 py-2 text-center text-base focus:outline-none focus:ring-2 focus:ring-primary touch-manipulation"
-              />
+
+            {/* Bundle composition */}
+            {isBundle && product.bundleSize && innerUom && (
+              <div className="mt-4 rounded-xl border border-violet-200 bg-violet-50/50 px-4 py-3">
+                <p className="flex items-center gap-2 text-sm font-semibold text-violet-800">
+                  <Package className="h-4 w-4" />
+                  What's in each {product.bundleLabel?.trim() || "bundle"}
+                </p>
+                <p className="mt-1 text-sm text-violet-700">
+                  <strong>{product.bundleSize}</strong> × {innerUom.short}
+                  <span className="ml-1 text-violet-600/80">
+                    (i.e. {(product.bundleSize).toLocaleString()} {innerUom.short} per {product.bundleLabel?.trim() || "bundle"})
+                  </span>
+                </p>
+              </div>
+            )}
+
+            {/* Quantity */}
+            <div className="mt-6">
+              <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                Quantity {!uomDef.integer && <span className="text-xs font-normal text-slate-500">(in {uomDef.short})</span>}
+              </label>
+              <div className="flex flex-wrap items-center gap-3">
+                <input
+                  type="number"
+                  inputMode={uomDef.integer ? "numeric" : "decimal"}
+                  min={uomDef.step}
+                  max={product.stock}
+                  step={uomDef.step}
+                  value={quantity}
+                  onChange={(e) => setQuantity(e.target.value)}
+                  onBlur={(e) => {
+                    const n = Number(e.target.value);
+                    if (!Number.isFinite(n) || n <= 0) {
+                      setQuantity(String(uomDef.step));
+                      return;
+                    }
+                    const clamped = Math.min(product.stock, n);
+                    setQuantity(uomDef.integer ? String(Math.max(1, Math.floor(clamped))) : String(clamped));
+                  }}
+                  className="w-28 min-h-[44px] rounded-lg border border-slate-200 px-3 py-2 text-center text-base focus:outline-none focus:ring-2 focus:ring-primary touch-manipulation"
+                />
+                <span className="text-sm text-slate-500">
+                  {isBundle
+                    ? (qtyParsed === 1
+                        ? (product.bundleLabel?.trim() || "bundle")
+                        : `${product.bundleLabel?.trim() || "bundle"}s`)
+                    : (uomDef.value === "each"
+                        ? (qtyParsed === 1 ? "unit" : "units")
+                        : uomDef.short)}
+                  <span className="text-slate-400"> · {Number(product.stock).toLocaleString()} in stock</span>
+                </span>
+              </div>
+              {qtyParsed > 0 && (
+                <p className="mt-2 text-sm text-slate-700">
+                  {isBundle && product.bundleSize && innerUom ? (
+                    <>
+                      = {formatQuantity(qtyParsed, product)} ·{" "}
+                      <span className="text-slate-500">
+                        contains {(qtyParsed * product.bundleSize).toLocaleString()} {innerUom.short} total
+                      </span>
+                    </>
+                  ) : (
+                    <>= {formatQuantity(qtyParsed, product)}</>
+                  )}
+                </p>
+              )}
+              <p className="mt-2 text-base font-semibold text-slate-900">
+                Order total:{" "}
+                <span className="text-primary">
+                  PKR {previewTotal.toFixed(2)}
+                </span>
+              </p>
+            </div>
+            {/* bank account to send payment to . the payment will be sent to fixeddaam admin */}
+            <div className="mt-6 rounded-lg border border-slate-200 bg-slate-50 p-4">
+              <p className="text-sm font-medium text-slate-700 mb-2">Send payment to:</p>
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-200 text-slate-700 font-medium">
+                  <span>DB</span>
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-slate-900">Bank Name: DBBL</p>
+                  <p className="text-sm text-slate-600">Account: XXXXXXXXXXXXXXXX</p>
+                  <p className="text-sm text-slate-600">Branch: Gulshan</p>
+                  <p className="text-sm text-slate-600">Account Name: FixedDaam Ltd.</p>
+                  <p className="text-sm text-slate-600">IBAN: PKXXXXXXXXXXXXXXXXXXXXXXXX</p>
+                </div>
+              </div>
             </div>
             {/* Payment proof */}
             <div className="mt-6">

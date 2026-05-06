@@ -68,4 +68,19 @@ export const useOrdersStore = create((set, get) => ({
     const res = await api.post("/v1/orders/validate-code", { code });
     return res.data;
   },
+
+  /**
+   * Fulfill (full or partial) a buyer's pickup against their live TOTP code.
+   * @param {string} orderId
+   * @param {string} code 6-digit TOTP from the buyer
+   * @param {Array<{itemIndex: number, quantity: number}>} pickups
+   */
+  fulfillOrder: async (orderId, code, pickups) => {
+    const res = await api.post(`/v1/orders/${orderId}/fulfill`, { code, pickups });
+    const updated = res.data;
+    set((state) => ({
+      orders: state.orders.map((o) => (o.id === orderId ? updated : o)),
+    }));
+    return updated;
+  },
 }));
