@@ -27,13 +27,20 @@ export const useOrdersStore = create((set, get) => ({
    * Create a new order from cart items with a proof-of-payment image.
    * @param {Array<{productId: string, quantity: number}>} cartItems
    * @param {File} paymentProofFile
+   * @param {{ delivery?: boolean, deliveryAddress?: string }} [options]
    * @returns {Promise<Order>}
    */
-  addOrder: async (cartItems, paymentProofFile) => {
+  addOrder: async (cartItems, paymentProofFile, options = {}) => {
     const formData = new FormData();
     formData.append("items", JSON.stringify(cartItems));
     if (paymentProofFile) {
       formData.append("paymentProof", paymentProofFile);
+    }
+    if (options.delivery) {
+      formData.append("delivery", "true");
+      if (options.deliveryAddress) {
+        formData.append("deliveryAddress", options.deliveryAddress);
+      }
     }
     const res = await api.post("/v1/orders", formData, {
       headers: { "Content-Type": "multipart/form-data" },

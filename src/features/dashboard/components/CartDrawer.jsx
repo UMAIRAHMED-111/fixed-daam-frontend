@@ -10,6 +10,9 @@ import {
   formatQuantity,
 } from "@/features/dashboard/data/uomData";
 
+// Flat standard delivery fee (PKR). Delivery is currently Karachi-only.
+const DELIVERY_FEE = 100;
+
 export function CartDrawer({ open, onClose }) {
   const items = useCartStore((s) => s.items);
   const updateQuantity = useCartStore((s) => s.updateQuantity);
@@ -21,10 +24,14 @@ export function CartDrawer({ open, onClose }) {
   const [isPlacing, setIsPlacing] = useState(false);
   const [paymentFile, setPaymentFile] = useState(null);
   const [paymentPreview, setPaymentPreview] = useState(null);
+  const [delivery, setDelivery] = useState(false);
+  const [deliveryAddress, setDeliveryAddress] = useState("");
   const fileInputRef = useRef(null);
 
   const totalItems = items.reduce((s, i) => s + i.quantity, 0);
-  const totalAmount = items.reduce((s, i) => s + i.price * i.quantity, 0);
+  const subtotal = items.reduce((s, i) => s + i.price * i.quantity, 0);
+  const deliveryFee = delivery ? DELIVERY_FEE : 0;
+  const totalAmount = subtotal + deliveryFee;
 
   const handleFileChange = (e) => {
     const file = e.target.files?.[0];
@@ -39,16 +46,30 @@ export function CartDrawer({ open, onClose }) {
       toast.error("Please upload your proof of payment before placing the order.");
       return;
     }
+    const trimmedAddress = deliveryAddress.trim();
+    if (delivery) {
+      if (!trimmedAddress) {
+        toast.error("Please enter a delivery address.");
+        return;
+      }
+      if (!/\bkarachi\b/i.test(trimmedAddress)) {
+        toast.error("Delivery is currently only available in Karachi.");
+        return;
+      }
+    }
     setIsPlacing(true);
     try {
       const order = await addOrder(
         items.map((i) => ({ productId: i.productId, quantity: i.quantity })),
-        paymentFile
+        paymentFile,
+        delivery ? { delivery: true, deliveryAddress: trimmedAddress } : {}
       );
       setLastOrder(order);
       clearCart();
       setPaymentFile(null);
       setPaymentPreview(null);
+      setDelivery(false);
+      setDeliveryAddress("");
       setCheckingOut(true);
       toast.success("Order placed! Your price is locked.");
     } catch (err) {
@@ -63,6 +84,8 @@ export function CartDrawer({ open, onClose }) {
     setCheckingOut(false);
     setPaymentFile(null);
     setPaymentPreview(null);
+    setDelivery(false);
+    setDeliveryAddress("");
     onClose();
   };
 
@@ -177,10 +200,51 @@ export function CartDrawer({ open, onClose }) {
         </div>
         {!checkingOut && items.length > 0 && (
           <div className="border-t border-slate-200 p-4 pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] pb-[max(1rem,env(safe-area-inset-bottom))] space-y-4">
-            <p className="flex justify-between text-sm font-semibold text-slate-900">
-              <span>Total</span>
-              <span>PKR {totalAmount.toFixed(2)}</span>
-            </p>
+            {/* Delivery option — flat PKR 100, Karachi only */}
+            <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-3">
+              <label className="flex cursor-pointer items-start gap-3">
+                <input
+                  type="checkbox"
+                  checked={delivery}
+                  onChange={(e) => setDelivery(e.target.checked)}
+                  className="mt-0.5 h-5 w-5 shrink-0 rounded border-slate-300 text-primary focus:ring-primary"
+                />
+                <span className="min-w-0 flex-1">
+                  <span className="flex items-center justify-between gap-2 text-sm font-medium text-slate-900">
+                    <span>Add delivery</span>
+                    <span className="shrink-0">PKR {DELIVERY_FEE.toFixed(2)}</span>
+                  </span>
+                  <span className="mt-0.5 block text-xs text-slate-500">
+                    Standard delivery — currently available in Karachi only.
+                  </span>
+                </span>
+              </label>
+              {delivery && (
+                <textarea
+                  value={deliveryAddress}
+                  onChange={(e) => setDeliveryAddress(e.target.value)}
+                  rows={3}
+                  placeholder="Delivery address (Karachi)"
+                  className="mt-3 w-full resize-none rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                />
+              )}
+            </div>
+            <div className="space-y-1.5">
+              <p className="flex justify-between text-sm text-slate-600">
+                <span>Subtotal</span>
+                <span>PKR {subtotal.toFixed(2)}</span>
+              </p>
+              {delivery && (
+                <p className="flex justify-between text-sm text-slate-600">
+                  <span>Delivery</span>
+                  <span>PKR {deliveryFee.toFixed(2)}</span>
+                </p>
+              )}
+              <p className="flex justify-between text-sm font-semibold text-slate-900">
+                <span>Total</span>
+                <span>PKR {totalAmount.toFixed(2)}</span>
+              </p>
+            </div>
             {/* Payment proof upload */}
             <div>
               <p className="text-xs font-medium text-slate-700 mb-2">Proof of payment <span className="text-red-500">*</span></p>
