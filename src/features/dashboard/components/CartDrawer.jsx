@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Minus, Plus, ShoppingBag, Trash2, X } from "lucide-react";
 import { useCartStore } from "@/stores/cartStore";
+import { useAuthStore } from "@/stores/authStore";
 import { ProductImage } from "@/features/dashboard/components/ProductImage";
 import { formatAmount } from "@/lib/money";
 import { getUom, formatQuantity } from "@/features/dashboard/data/uomData";
@@ -21,6 +22,7 @@ import { getUom, formatQuantity } from "@/features/dashboard/data/uomData";
  */
 export function CartDrawer({ open, onClose }) {
   const navigate = useNavigate();
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const items = useCartStore((s) => s.items);
   const updateQuantity = useCartStore((s) => s.updateQuantity);
   const removeItem = useCartStore((s) => s.removeItem);
@@ -217,16 +219,20 @@ export function CartDrawer({ open, onClose }) {
               <span>Subtotal</span>
               <span>PKR {formatAmount(subtotal)}</span>
             </p>
+            <p className="flex items-center justify-between gap-3 text-xs text-body">
+              <span>Delivery</span>
+              <span className="font-medium text-success">Included</span>
+            </p>
             <p className="text-xs text-muted">
-              Delivery and payment are handled at checkout. Your price is held from the
-              moment it is approved.
+              No account needed, you can check out as a guest. Your price is held from
+              the moment it is approved.
             </p>
             <button
               type="button"
               onClick={goToCheckout}
               className="min-h-[52px] w-full rounded-xl bg-primary text-base font-semibold text-primary-foreground transition-colors duration-[var(--dur-fast)] hover:bg-accent"
             >
-              Check out
+              {isAuthenticated ? "Check out" : "Check out as guest"}
             </button>
             <button
               type="button"

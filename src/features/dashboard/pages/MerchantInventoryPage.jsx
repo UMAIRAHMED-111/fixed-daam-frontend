@@ -12,7 +12,7 @@ import { PANEL_CLASS } from "@/lib/styles";
 import { formatAmount } from "@/lib/money";
 import { ProductImage } from "../components/ProductImage";
 import { SearchBar } from "../components/SearchBar";
-import { formatUomSuffix } from "../data/uomData";
+import { formatTenor, formatUomSuffix } from "../data/uomData";
 
 /** Stock below this many units gets flagged so the merchant can restock in time. */
 const LOW_STOCK = 10;
@@ -175,6 +175,7 @@ export function MerchantInventoryPage() {
             <ul className="divide-y divide-border">
               {filtered.map((p) => {
                 const suffix = formatUomSuffix(p).replace(/^\//, "");
+                const tenor = formatTenor(p);
                 return (
                   <li
                     key={p.id}
@@ -196,6 +197,7 @@ export function MerchantInventoryPage() {
                         <p className="truncate text-xs text-muted">
                           {p.category}
                           {suffix && ` · per ${suffix}`}
+                          {tenor && ` · valid ${tenor}`}
                           {p.isActive === false && " · hidden from buyers"}
                         </p>
                       </div>

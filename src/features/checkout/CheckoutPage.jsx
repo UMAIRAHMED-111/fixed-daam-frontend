@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { ShoppingBag } from "lucide-react";
 import { toast } from "sonner";
@@ -11,13 +11,12 @@ import { CheckoutSteps } from "./components/CheckoutSteps";
 import { OrderSummary } from "./components/OrderSummary";
 import { OrderPlaced } from "./components/OrderPlaced";
 import { CustomerStage } from "./stages/CustomerStage";
-import { DeliveryStage } from "./stages/DeliveryStage";
 import { PaymentStage } from "./stages/PaymentStage";
 import { ReviewStage } from "./stages/ReviewStage";
-import { DELIVERY_FEE, STAGE_IDS } from "./constants";
+import { STAGE_IDS } from "./constants";
 import { rememberGuestOrder } from "@/lib/guestOrders";
 
-const EMPTY_CUSTOMER = { name: "", email: "", phoneNumber: "" };
+const EMPTY_CUSTOMER = { name: "", email: "", phoneNumber: "", address: "" };
 
 export function CheckoutPage() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -31,10 +30,9 @@ export function CheckoutPage() {
   const addGuestOrder = useOrdersStore((s) => s.addGuestOrder);
 
   const [customer, setCustomer] = useState(EMPTY_CUSTOMER);
-  // Prefilled details aren't confirmed until the shopper submits the contact stage.
+  // Prefilled details aren't confirmed until the shopper submits the first stage.
   const [isContactConfirmed, setIsContactConfirmed] = useState(false);
-  const [delivery, setDelivery] = useState({ method: "pickup", address: "" });
-  const [payment, setPayment] = useState({ file: null, preview: null });
+  const [hasSeenPayment, setHasSeenPayment] = useState(false);
   const [isPlacing, setIsPlacing] = useState(false);
   const [placedOrder, setPlacedOrder] = useState(null);
   const [guestToken, setGuestToken] = useState(null);
@@ -46,21 +44,22 @@ export function CheckoutPage() {
       name: current.name || user.name || "",
       email: user.email || "",
       phoneNumber: current.phoneNumber || user.phoneNumber || "",
+      address: current.address || "",
     }));
   }, [user]);
 
   // Guests qualify on contact details alone: no account required to continue.
   const isCustomerDone = Boolean(
-    customer.name && customer.email && customer.phoneNumber && isContactConfirmed
+    customer.name &&
+      customer.email &&
+      customer.phoneNumber &&
+      customer.address &&
+      isContactConfirmed
   );
-  const isDeliveryDone =
-    isCustomerDone &&
-    (delivery.method === "pickup" ||
-      (delivery.method === "delivery" && Boolean(delivery.address)));
-  const isPaymentDone = isDeliveryDone && Boolean(payment.file);
+  const isPaymentDone = isCustomerDone && hasSeenPayment;
 
   /** Furthest stage the shopper has unlocked, everything after it is out of bounds. */
-  const reachedIndex = isPaymentDone ? 3 : isDeliveryDone ? 2 : isCustomerDone ? 1 : 0;
+  const reachedIndex = isPaymentDone ? 2 : isCustomerDone ? 1 : 0;
 
   const requestedStage = searchParams.get("stage");
   const requestedIndex = STAGE_IDS.indexOf(requestedStage);
@@ -83,12 +82,11 @@ export function CheckoutPage() {
     }
   }, [placedOrder, requestedStage, currentStage, setSearchParams]);
 
-  const subtotal = useMemo(
+  // Delivery is included in every purchase, so the total is just the goods.
+  const total = useMemo(
     () => items.reduce((sum, i) => sum + i.price * i.quantity, 0),
     [items]
   );
-  const isDelivery = delivery.method === "delivery";
-  const total = subtotal + (isDelivery ? DELIVERY_FEE : 0);
 
   const handleCustomerSubmit = async (data) => {
     setCustomer(data);
@@ -96,7 +94,7 @@ export function CheckoutPage() {
 
     if (!isAuthenticated) {
       // Guest: nothing to sync, the details ride along with the order itself.
-      goToStage("delivery");
+      goToStage("payment");
       return;
     }
 
@@ -117,40 +115,26 @@ export function CheckoutPage() {
         return;
       }
     }
-    goToStage("delivery");
-  };
-
-  const handleDeliverySubmit = (data) => {
-    setDelivery(data);
     goToStage("payment");
   };
 
-  /** Reflect the picked method in the summary as soon as it's selected. */
-  const handleMethodChange = useCallback(
-    (method) => setDelivery((current) => (current.method === method ? current : { ...current, method })),
-    []
-  );
+  const handlePaymentSubmit = () => {
+    setHasSeenPayment(true);
+    goToStage("review");
+  };
 
   const handlePlaceOrder = async () => {
     if (isPlacing) return;
     setIsPlacing(true);
     const cartPayload = items.map((i) => ({ productId: i.productId, quantity: i.quantity }));
-    const deliveryPayload = isDelivery
-      ? { delivery: true, deliveryAddress: delivery.address }
-      : {};
 
     try {
       if (isAuthenticated) {
-        const order = await addOrder(cartPayload, payment.file, deliveryPayload);
+        const order = await addOrder(cartPayload, customer.address);
         clearCart();
         setPlacedOrder(order);
       } else {
-        const { order, guestToken: token } = await addGuestOrder(
-          cartPayload,
-          payment.file,
-          customer,
-          deliveryPayload
-        );
+        const { order, guestToken: token } = await addGuestOrder(cartPayload, customer);
         rememberGuestOrder({ orderId: order.id, token, total: order.total });
         clearCart();
         setGuestToken(token);
@@ -216,28 +200,16 @@ export function CheckoutPage() {
             {currentStage === "customer" && (
               <CustomerStage customer={customer} onSubmit={handleCustomerSubmit} />
             )}
-            {currentStage === "delivery" && (
-              <DeliveryStage
-                delivery={delivery}
-                onSubmit={handleDeliverySubmit}
-                onMethodChange={handleMethodChange}
-                onBack={() => goToStage("customer")}
-              />
-            )}
             {currentStage === "payment" && (
               <PaymentStage
                 total={total}
-                payment={payment}
-                onChange={setPayment}
-                onSubmit={() => goToStage("review")}
-                onBack={() => goToStage("delivery")}
+                onSubmit={handlePaymentSubmit}
+                onBack={() => goToStage("customer")}
               />
             )}
             {currentStage === "review" && (
               <ReviewStage
                 customer={customer}
-                delivery={delivery}
-                payment={payment}
                 isPlacing={isPlacing}
                 onEdit={goToStage}
                 onPlaceOrder={handlePlaceOrder}
@@ -247,7 +219,7 @@ export function CheckoutPage() {
           </div>
 
           <div className="order-1 lg:order-2">
-            <OrderSummary items={items} isDelivery={isDelivery} />
+            <OrderSummary items={items} />
           </div>
         </div>
       </div>

@@ -7,7 +7,7 @@ import { OrderCard } from "../components/OrderCard";
 const STATUS_TABS = [
   { id: "all", label: "All orders" },
   { id: "pending_verification", label: "Pending" },
-  { id: "locked", label: "Preparing" },
+  { id: "locked", label: "Confirmed" },
   { id: "ready", label: "Ready for pickup" },
   { id: "delivered", label: "Delivered" },
   { id: "rejected", label: "Rejected" },

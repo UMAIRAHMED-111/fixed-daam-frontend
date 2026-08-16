@@ -17,6 +17,18 @@ export const UOM_OPTIONS = [
 
 export const UOM_VALUES = UOM_OPTIONS.map((u) => u.value);
 
+/**
+ * Tenor: how long a purchase stays valid, counted from the order date.
+ * Merchants set it per product; it is snapshotted onto the order line so a
+ * later edit can't shorten a window someone already paid for.
+ */
+export const TENOR_UNIT_OPTIONS = [
+  { value: "days", label: "Days", singular: "day" },
+  { value: "months", label: "Months", singular: "month" },
+];
+
+export const TENOR_UNIT_VALUES = TENOR_UNIT_OPTIONS.map((u) => u.value);
+
 /** Bundle's inner UOM excludes "bundle" itself (no bundles of bundles). */
 export const BUNDLE_BASE_UOM_OPTIONS = UOM_OPTIONS.filter((u) => u.value !== "bundle");
 
@@ -121,6 +133,43 @@ export const getRemainingDeliverable = (item) => {
 };
 
 const pluralize = (n, word) => `${formatNumber(n)} ${n === 1 ? word : `${word}s`}`;
+
+/**
+ * Human-readable tenor, e.g. "6 months", "30 days", "1 month".
+ * Returns "" when the product or order line carries no tenor, so callers can
+ * just check for truthiness before rendering a label.
+ *
+ * @param {{tenorValue?: number, tenorUnit?: string}} item
+ * @returns {string}
+ */
+export const formatTenor = (item) => {
+  const value = Number(item?.tenorValue);
+  const unit = TENOR_UNIT_OPTIONS.find((u) => u.value === item?.tenorUnit);
+  if (!Number.isFinite(value) || value <= 0 || !unit) return "";
+  return pluralize(value, unit.singular);
+};
+
+/**
+ * The date a purchased line stops being valid, or null when it never does.
+ *
+ * @param {{tenorValue?: number, tenorUnit?: string}} item
+ * @param {string|Date} orderedAt - When the order was placed
+ * @returns {Date|null}
+ */
+export const getTenorExpiry = (item, orderedAt) => {
+  const value = Number(item?.tenorValue);
+  if (!Number.isFinite(value) || value <= 0 || !item?.tenorUnit) return null;
+  const start = new Date(orderedAt);
+  if (Number.isNaN(start.getTime())) return null;
+
+  const expiry = new Date(start);
+  if (item.tenorUnit === "months") {
+    expiry.setMonth(expiry.getMonth() + value);
+  } else {
+    expiry.setDate(expiry.getDate() + value);
+  }
+  return expiry;
+};
 
 /** "12 loaves", "3.5 kg", "5 units", qty in deliverable units, with proper noun. */
 export const formatDeliverableQty = (qty, item) => {

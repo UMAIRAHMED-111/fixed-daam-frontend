@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
-import { Lock } from "lucide-react";
-import { formatUomSuffix, getUom } from "../data/uomData";
+import { CalendarClock, Lock } from "lucide-react";
+import { formatTenor, formatUomSuffix, getUom } from "../data/uomData";
 import { ProductImage } from "./ProductImage";
 import { Badge } from "@/components/ui/StatusBadge";
 import { formatAmount } from "@/lib/money";
@@ -14,6 +14,7 @@ export function ProductCard({ product }) {
   const isBundle = product.uom === "bundle";
   const innerUom = isBundle && product.bundleUom ? getUom(product.bundleUom) : null;
   const priceSuffix = formatUomSuffix(product);
+  const tenor = formatTenor(product);
   const stock = Number(product.stock ?? 0);
 
   // Signed-out shoppers browse the public product page; signed-in users stay
@@ -60,6 +61,12 @@ export function ProductCard({ product }) {
         </h3>
         {product.description && (
           <p className="mt-1 line-clamp-2 text-sm text-body">{product.description}</p>
+        )}
+        {tenor && (
+          <p className="mt-2 inline-flex items-center gap-1 text-xs text-muted">
+            <CalendarClock className="h-3 w-3 shrink-0" aria-hidden />
+            Valid {tenor} after purchase
+          </p>
         )}
 
         <div className="mt-auto flex items-end justify-between gap-3 pt-4">

@@ -32,10 +32,13 @@ export function DashboardNav() {
     <>
       <header className="sticky top-0 z-40 w-full border-b border-border bg-surface">
         <nav className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-2 px-4 sm:px-6 lg:px-8">
+          {/* The wordmark goes home, the way a wordmark does everywhere else.
+              Pointing it at /dashboard left buyers with no way back to the
+              storefront. The nav links below still cover the dashboard. */}
           <Link
-            to="/dashboard"
+            to="/"
             className="flex shrink-0 items-center transition opacity-90 hover:opacity-100"
-            aria-label={`${APP_NAME} dashboard`}
+            aria-label={`${APP_NAME} home`}
           >
             <Logo variant="compact" />
           </Link>

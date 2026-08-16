@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ChevronLeft, ChevronRight, Package, Lock } from "lucide-react";
+import { ChevronLeft, ChevronRight, Package, Lock, CalendarClock } from "lucide-react";
 import { useInventoryStore } from "@/stores/inventoryStore";
 import { useCartStore } from "@/stores/cartStore";
 import { useAuthStore } from "@/stores/authStore";
@@ -10,6 +10,7 @@ import {
   getUom,
   formatUomSuffix,
   formatQuantity,
+  formatTenor,
 } from "../data/uomData";
 import { pickStockImage } from "../data/categoryImages";
 import { ProductImage } from "../components/ProductImage";
@@ -69,6 +70,7 @@ export function ProductDetailPage() {
   const isBundle = product.uom === "bundle";
   const innerUom = isBundle && product.bundleUom ? getUom(product.bundleUom) : null;
   const priceSuffix = formatUomSuffix(product);
+  const tenor = formatTenor(product);
   const qtyParsed = parseQty();
   const previewTotal = qtyParsed * Number(product.price || 0);
   const goPrev = () => setSlideIndex((i) => (i <= 0 ? images.length - 1 : i - 1));
@@ -84,7 +86,7 @@ export function ProductDetailPage() {
     toast.success("Added to cart");
   };
 
-  /** Straight to checkout with just this item, delivery and payment live there. */
+  /** Straight to checkout with just this item; details and payment live there. */
   const handleBuyNow = () => {
     const qty = parseQty();
     if (qty <= 0) {
@@ -201,6 +203,16 @@ export function ProductDetailPage() {
                 This price is locked the moment you check out, collect whenever
                 you&apos;re ready, in as many visits as you like.
               </p>
+              {tenor && (
+                <p className="mt-2 flex items-start gap-2 text-sm text-body">
+                  <CalendarClock
+                    className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary"
+                    aria-hidden
+                  />
+                  Valid for <strong className="font-semibold">{tenor}</strong> after
+                  purchase — take delivery any time within that window.
+                </p>
+              )}
             </div>
 
             {/* Bundle composition */}
@@ -287,7 +299,7 @@ export function ProductDetailPage() {
               </Button>
             </div>
             <p className="mt-3 text-center text-sm text-muted sm:text-left">
-              Delivery and payment are handled at checkout.
+              Delivery is included. No account needed — you can check out as a guest.
             </p>
           </div>
         </div>

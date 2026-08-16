@@ -1,27 +1,27 @@
+import { WHATSAPP_NUMBER } from "@/lib/contact";
+
 export const APP_NAME = "FixedDaam";
 export const TAGLINE = "Pay now. Buy later. Lock in today's price.";
 
 /**
- * The buyer's sequence. Wording matches what the product actually does: a
- * rotating six-digit code shown at the counter, not a QR code.
+ * The buyer's sequence. Payment proof and delivery both run over WhatsApp, so
+ * the steps say so plainly rather than pointing at anything to upload.
  */
 export const HOW_IT_WORKS_STEPS = [
   {
-    title: "Pay today's price",
+    title: "Lock the price",
     description:
       "Check out at the rate on screen and send the transfer. Once an admin confirms the payment, the shop sets your items aside at that price.",
     icon: "lock",
   },
   {
-    title: "Keep your code",
-    description:
-      "Your order carries a six-digit code that refreshes every couple of minutes. It lives on your order page, so there is nothing to print or lose.",
+    title: "Send payment screenshot",
+    description: `Send your payment proof to ${WHATSAPP_NUMBER} on WhatsApp. Nothing to upload, and if we don't see it we'll reach out and ask.`,
     icon: "qr",
   },
   {
-    title: "Collect when you want",
-    description:
-      "Show the code at the counter and take what you need. Come back for the rest whenever, still at the price you paid.",
+    title: "Reach out",
+    description: `Delivery comes with every purchase. Contact us on WhatsApp (${WHATSAPP_NUMBER}) when you require delivery of your purchase.`,
     icon: "retrieve",
   },
 ];

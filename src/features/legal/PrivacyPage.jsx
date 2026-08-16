@@ -25,8 +25,8 @@ export function PrivacyPage() {
             <ul className="list-disc list-inside space-y-1">
               <li><strong>Account data</strong>, name, email address, password (stored hashed), and account type (Buyer or Merchant).</li>
               <li><strong>Business data (Merchants only)</strong>, business name, contact details, and product listings including descriptions, images, and prices.</li>
-              <li><strong>Order data</strong>, products held, quantities, order statuses, and pickup code identifiers.</li>
-              <li><strong>Payment data</strong>, payment screenshots or confirmations uploaded to verify transactions. We do not store full card numbers or bank credentials.</li>
+              <li><strong>Order data</strong>, products held, quantities, order statuses, delivery addresses, and pickup code identifiers.</li>
+              <li><strong>Payment data</strong>, payment confirmations you send us over WhatsApp to verify transactions, and any screenshots submitted through the site before that flow changed. We do not store full card numbers or bank credentials.</li>
             </ul>
 
             <h3 className="font-medium text-body mt-4 mb-1">2.2 Information Collected Automatically</h3>

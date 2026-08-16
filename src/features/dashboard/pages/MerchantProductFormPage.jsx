@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ChevronLeft, Upload, X, Package } from "lucide-react";
+import { ChevronLeft, Upload, X, Package, CalendarClock } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
@@ -13,6 +13,8 @@ import { CATEGORIES } from "../data/productsData";
 import {
   UOM_OPTIONS,
   BUNDLE_BASE_UOM_OPTIONS,
+  TENOR_UNIT_OPTIONS,
+  formatTenor,
   getUom,
 } from "../data/uomData";
 import { api } from "@/lib/api";
@@ -39,6 +41,8 @@ export function MerchantProductFormPage() {
       bundleSize: "",
       bundleUom: "",
       bundleLabel: "",
+      tenorValue: "",
+      tenorUnit: "",
     },
   });
   const fileInputRef = useRef(null);
@@ -51,6 +55,9 @@ export function MerchantProductFormPage() {
   const bundleSize = form.watch("bundleSize");
   const bundleUom = form.watch("bundleUom");
   const bundleLabel = form.watch("bundleLabel");
+  const tenorValue = form.watch("tenorValue");
+  const tenorUnit = form.watch("tenorUnit");
+  const tenorPreview = formatTenor({ tenorValue, tenorUnit });
   const reserved = Number(product?.reserved ?? 0);
   const stockInput = Number(form.watch("stock") ?? 0);
 
@@ -66,6 +73,8 @@ export function MerchantProductFormPage() {
         bundleSize: product.bundleSize ?? "",
         bundleUom: product.bundleUom ?? "",
         bundleLabel: product.bundleLabel ?? "",
+        tenorValue: product.tenorValue ?? "",
+        tenorUnit: product.tenorUnit ?? "",
       });
       setImages(product.images ?? []);
     }
@@ -144,6 +153,12 @@ export function MerchantProductFormPage() {
           : null,
       bundleUom: data.uom === "bundle" ? data.bundleUom || null : null,
       bundleLabel: data.uom === "bundle" ? data.bundleLabel?.trim() || "" : "",
+      // Blank tenor means the purchase never expires; the pair travels together
+      // so half-filled input clears both rather than storing a dangling number.
+      tenorValue:
+        data.tenorValue !== "" && data.tenorUnit ? Number(data.tenorValue) : null,
+      tenorUnit:
+        data.tenorValue !== "" && data.tenorUnit ? data.tenorUnit : null,
       images,
     };
 
@@ -317,6 +332,61 @@ export function MerchantProductFormPage() {
               )}
             </div>
           )}
+
+          {/* Tenor: how long the buyer's purchase stays valid after they order.
+              Optional, because plenty of goods simply don't expire. */}
+          <div className="rounded-xl border border-border bg-surface-sunken/60 p-4 space-y-4">
+            <div>
+              <p className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                <CalendarClock className="h-4 w-4 text-primary" aria-hidden />
+                Validity after purchase
+              </p>
+              <p className="mt-1 text-xs text-muted">
+                How long a buyer has to take delivery once they&apos;ve paid. Shown on
+                the product page and on their order. Leave blank for no time limit.
+              </p>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <FormField
+                label="Valid for"
+                error={form.formState.errors.tenorValue?.message}
+                id="tenorValue"
+              >
+                <Input
+                  type="number"
+                  min={1}
+                  step={1}
+                  placeholder="e.g. 6"
+                  {...form.register("tenorValue")}
+                />
+              </FormField>
+
+              <FormField
+                label="Unit"
+                error={form.formState.errors.tenorUnit?.message}
+                id="tenorUnit"
+              >
+                <select
+                  className="w-full min-h-[44px] rounded-lg border border-border bg-surface px-3 py-2.5 text-base text-foreground focus:outline-none focus:ring-2 focus:ring-primary touch-manipulation"
+                  {...form.register("tenorUnit")}
+                >
+                  <option value="">No time limit</option>
+                  {TENOR_UNIT_OPTIONS.map((u) => (
+                    <option key={u.value} value={u.value}>
+                      {u.label}
+                    </option>
+                  ))}
+                </select>
+              </FormField>
+            </div>
+
+            {tenorPreview && (
+              <div className="rounded-lg border border-border bg-surface px-3 py-2 text-xs text-body">
+                Buyers see: <strong>Valid {tenorPreview} after purchase</strong>
+              </div>
+            )}
+          </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
             <FormField

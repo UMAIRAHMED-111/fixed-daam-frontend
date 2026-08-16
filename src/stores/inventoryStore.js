@@ -54,6 +54,8 @@ export const useInventoryStore = create((set, get) => ({
       bundleSize: payload.bundleSize ?? null,
       bundleUom: payload.bundleUom ?? null,
       bundleLabel: payload.bundleLabel ?? "",
+      tenorValue: payload.tenorValue ?? null,
+      tenorUnit: payload.tenorUnit ?? null,
     });
     const product = res.data;
     set((state) => ({ products: [product, ...state.products] }));
@@ -78,6 +80,8 @@ export const useInventoryStore = create((set, get) => ({
     if (payload.bundleSize !== undefined) body.bundleSize = payload.bundleSize;
     if (payload.bundleUom !== undefined) body.bundleUom = payload.bundleUom;
     if (payload.bundleLabel !== undefined) body.bundleLabel = payload.bundleLabel;
+    if (payload.tenorValue !== undefined) body.tenorValue = payload.tenorValue;
+    if (payload.tenorUnit !== undefined) body.tenorUnit = payload.tenorUnit;
 
     const res = await api.patch(`/v1/products/${id}`, body);
     const updated = res.data;

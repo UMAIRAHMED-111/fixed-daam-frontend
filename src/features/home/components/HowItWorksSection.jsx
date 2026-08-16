@@ -2,8 +2,8 @@ import { Reveal } from "@/components/ui/Reveal";
 import { HOW_IT_WORKS_STEPS } from "../constants";
 
 /**
- * Pay, code, collect. A genuine sequence, so it is set as a pickup slip: three
- * stubs on one perforated strip, numbered because the order actually matters.
+ * Lock, send proof, reach out. A genuine sequence, so it is set as a pickup
+ * slip: three stubs on one perforated strip, numbered because the order matters.
  */
 export function HowItWorksSection() {
   return (
@@ -17,8 +17,8 @@ export function HowItWorksSection() {
             Three steps, then the price stops moving
           </h2>
           <p className="mt-4 text-lg leading-relaxed text-body">
-            No app to install and no card kept on file. Pay once, keep the code, collect
-            when it suits you.
+            No app to install and no card kept on file. Pay once, send us the
+            screenshot, and ask for delivery whenever it suits you.
           </p>
         </Reveal>
 

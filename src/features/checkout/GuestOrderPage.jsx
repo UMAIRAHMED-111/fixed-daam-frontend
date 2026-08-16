@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
-import { AlertTriangle, Store, Truck } from "lucide-react";
+import { AlertTriangle, MessageCircle, Truck } from "lucide-react";
 import { api } from "@/lib/api";
 import { CheckoutHeader } from "./components/CheckoutHeader";
 import { PickupCode } from "@/features/dashboard/components/OrderCard";
@@ -8,15 +8,14 @@ import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { formatAmount } from "@/lib/money";
-import { formatQuantity } from "@/features/dashboard/data/uomData";
+import { formatQuantity, formatTenor } from "@/features/dashboard/data/uomData";
 import { getGuestOrderToken, rememberGuestOrder } from "@/lib/guestOrders";
+import { WHATSAPP_NUMBER, whatsappLink } from "@/lib/contact";
 
 /** What the buyer should do next, per status. */
 const NEXT_STEP = {
-  pending_verification:
-    "We are checking your payment proof. This usually takes 2 to 3 hours, and your price is already locked.",
-  locked:
-    "Payment approved and your price is locked. The merchant is preparing your order.",
+  pending_verification: `We are checking your payment. Send the confirmation screenshot to ${WHATSAPP_NUMBER} on WhatsApp if you haven't already. Your price is locked either way.`,
+  locked: `Order is confirmed — when you require delivery please contact us on WhatsApp (${WHATSAPP_NUMBER}).`,
   ready: "Ready for collection. Show the code below at the store.",
   delivered: "Collected. Thanks for shopping with us.",
   rejected:
@@ -123,6 +122,22 @@ export function GuestOrderPage() {
               {NEXT_STEP[order.status]}
             </p>
 
+            {["pending_verification", "locked"].includes(order.status) && (
+              <a
+                href={whatsappLink(
+                  order.status === "locked"
+                    ? `Hi, I'd like to arrange delivery for order #${order.id?.slice(-8).toUpperCase()}.`
+                    : `Hi, here is my payment confirmation for order #${order.id?.slice(-8).toUpperCase()}.`
+                )}
+                target="_blank"
+                rel="noreferrer"
+                className="mt-3 inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-semibold text-primary-foreground transition-colors duration-[var(--dur-fast)] hover:bg-accent"
+              >
+                <MessageCircle className="h-4 w-4" aria-hidden />
+                Message us on WhatsApp
+              </a>
+            )}
+
             {order.status === "rejected" && order.rejectionNote && (
               <p className="mt-3 rounded-xl bg-danger-soft px-4 py-3 text-sm text-danger">
                 Reason: {order.rejectionNote}
@@ -148,6 +163,11 @@ export function GuestOrderPage() {
                         {formatQuantity(item.quantity, item)}
                         {item.merchantName && ` · ${item.merchantName}`}
                       </p>
+                      {formatTenor(item) && (
+                        <p className="mt-0.5 text-xs text-muted">
+                          Valid {formatTenor(item)} after purchase
+                        </p>
+                      )}
                     </div>
                     <p className="tnum shrink-0 text-sm font-semibold text-foreground">
                       PKR {formatAmount(item.price * item.quantity)}
@@ -156,18 +176,14 @@ export function GuestOrderPage() {
                 ))}
               </ul>
               <div className="flex items-center justify-between gap-4 border-t border-border px-5 py-4">
-                <span className="flex items-center gap-2 text-sm text-body">
-                  {order.delivery ? (
-                    <>
-                      <Truck className="h-4 w-4 text-muted" aria-hidden />
-                      Delivery to {order.deliveryAddress}
-                    </>
-                  ) : (
-                    <>
-                      <Store className="h-4 w-4 text-muted" aria-hidden />
-                      Collect from the merchant
-                    </>
-                  )}
+                <span className="flex items-start gap-2 text-sm text-body">
+                  <Truck className="mt-0.5 h-4 w-4 shrink-0 text-muted" aria-hidden />
+                  <span>
+                    Delivery included
+                    {order.deliveryAddress && (
+                      <span className="block text-muted">{order.deliveryAddress}</span>
+                    )}
+                  </span>
                 </span>
                 <span className="tnum shrink-0 text-base font-bold text-foreground">
                   PKR {formatAmount(order.total)}

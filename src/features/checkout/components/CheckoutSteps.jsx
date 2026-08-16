@@ -2,7 +2,7 @@ import { Check } from "lucide-react";
 import { CHECKOUT_STAGES } from "../constants";
 
 /**
- * Numbered stage rail: Contact → Delivery → Payment → Place order.
+ * Numbered stage rail: Details → Payment → Place order.
  * Completed stages are clickable so shoppers can go back and edit.
  *
  * @param {Object} props

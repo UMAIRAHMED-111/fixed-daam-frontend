@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from "react";
-import { Search, Package, Clock, XCircle } from "lucide-react";
+import { Search, Package, Clock, Truck, XCircle } from "lucide-react";
 import { useAuthStore } from "@/stores/authStore";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
@@ -11,6 +11,7 @@ import { StatusBadge } from "@/components/ui/StatusBadge";
 import { INPUT_CLASS, PANEL_CLASS } from "@/lib/styles";
 import { formatAmount } from "@/lib/money";
 import { formatQuantity } from "../data/uomData";
+import { WHATSAPP_NUMBER } from "@/lib/contact";
 
 const STATUS_TABS = [
   { id: "all", label: "All" },
@@ -136,7 +137,7 @@ export function AdminOrdersPage() {
       <div className="mx-auto max-w-4xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
         <PageHeader
           title="Payment verification"
-          description="Approve or reject the payment proof buyers upload at checkout. Approving locks their price and releases the order to the merchant."
+          description={`Buyers send their payment confirmation to ${WHATSAPP_NUMBER} on WhatsApp. Match it to the order, then approve to lock the price and release the order to the merchant.`}
         />
 
         {/* Queue state as one line of counts, not four identical metric cards. */}
@@ -235,7 +236,7 @@ export function AdminOrdersPage() {
             }
             description={
               orders.length === 0
-                ? "Orders appear here the moment a buyer checks out. You'll verify their payment proof before the merchant prepares anything."
+                ? "Orders appear here the moment a buyer checks out. You'll confirm their payment on WhatsApp before the merchant prepares anything."
                 : search
                   ? "Try a buyer name, an order ID, or a product name."
                   : "Nothing needs attention in this tab right now."
@@ -311,6 +312,15 @@ export function AdminOrdersPage() {
                       <p className="mt-3 text-sm font-semibold text-foreground">
                         Total: PKR {formatAmount(order.total)}
                       </p>
+
+                      {/* Delivery ships with every order, so whoever arranges it
+                          needs the address without opening another screen. */}
+                      {order.deliveryAddress && (
+                        <p className="mt-3 flex items-start gap-2 rounded-lg bg-surface-sunken px-3 py-2 text-xs text-body">
+                          <Truck className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted" aria-hidden />
+                          <span className="whitespace-pre-line">{order.deliveryAddress}</span>
+                        </p>
+                      )}
 
                       {isRejected && order.rejectionNote && (
                         <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-600">

@@ -1,5 +1,6 @@
 import { Plus } from "lucide-react";
 import { Reveal } from "@/components/ui/Reveal";
+import { WHATSAPP_NUMBER } from "@/lib/contact";
 
 /**
  * The questions a first-time buyer actually stops on. Paying now for goods you
@@ -20,7 +21,7 @@ const FAQS = [
   },
   {
     q: "When does my price actually lock?",
-    a: "At checkout. You transfer the amount, upload the receipt, and once an admin has confirmed the payment, usually within two to three hours, the stock is set aside for you at that rate.",
+    a: `At checkout. You transfer the amount, send the confirmation screenshot to ${WHATSAPP_NUMBER} on WhatsApp, and once an admin has confirmed the payment, usually within two to three hours, the stock is set aside for you at that rate.`,
   },
   {
     q: "What if my payment is not approved?",
@@ -31,8 +32,8 @@ const FAQS = [
     a: "No. You can browse and check out as a guest with just your email and phone. You get a tracking link for the order, and if you register later with the same email, that order joins your account.",
   },
   {
-    q: "Can it be delivered instead?",
-    a: "Within Karachi, yes, for a flat PKR 100 added at checkout. Everywhere else it is collection from the shop.",
+    q: "Is delivery included?",
+    a: `Yes, delivery comes with every purchase at no extra cost. Give us your address at checkout, then message ${WHATSAPP_NUMBER} on WhatsApp whenever you want it delivered.`,
   },
 ];
 

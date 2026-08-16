@@ -1,5 +1,10 @@
 import { z } from "zod";
-import { UOM_VALUES, BUNDLE_BASE_UOM_OPTIONS, getUom } from "../data/uomData";
+import {
+  UOM_VALUES,
+  BUNDLE_BASE_UOM_OPTIONS,
+  TENOR_UNIT_VALUES,
+  getUom,
+} from "../data/uomData";
 
 const BUNDLE_BASE_VALUES = BUNDLE_BASE_UOM_OPTIONS.map((u) => u.value);
 
@@ -16,6 +21,12 @@ export const productFormSchema = z
       .optional(),
     bundleUom: z.string().optional(),
     bundleLabel: z.string().max(40).optional(),
+    // Tenor is optional (blank means the purchase never expires), but a number
+    // without a unit — or a unit without a number — means nothing.
+    tenorValue: z
+      .union([z.coerce.number().int().min(1, "Validity must be at least 1"), z.literal("")])
+      .optional(),
+    tenorUnit: z.string().optional(),
   })
   .superRefine((data, ctx) => {
     const uomDef = getUom(data.uom);
@@ -41,5 +52,29 @@ export const productFormSchema = z
           message: "Pick what's inside the bundle",
         });
       }
+    }
+
+    const hasTenorValue = data.tenorValue !== "" && data.tenorValue != null;
+    const hasTenorUnit = Boolean(data.tenorUnit);
+    if (hasTenorValue && !hasTenorUnit) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["tenorUnit"],
+        message: "Pick days or months",
+      });
+    }
+    if (hasTenorUnit && !hasTenorValue) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["tenorValue"],
+        message: "Enter how many",
+      });
+    }
+    if (hasTenorUnit && !TENOR_UNIT_VALUES.includes(data.tenorUnit)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["tenorUnit"],
+        message: "Pick days or months",
+      });
     }
   });

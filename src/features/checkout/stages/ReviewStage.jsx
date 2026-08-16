@@ -1,5 +1,5 @@
 import { Pencil } from "lucide-react";
-import { DELIVERY_CITY } from "../constants";
+import { PAYMENT_DETAILS, WHATSAPP_NUMBER } from "@/lib/contact";
 import { StageCard } from "../components/StageCard";
 import { Button } from "@/components/ui/Button";
 
@@ -26,28 +26,16 @@ function ReviewRow({ label, children, onEdit }) {
 }
 
 /**
- * Stage 4, everything in one place before the order is placed.
+ * Stage 3, everything in one place before the order is placed.
  *
  * @param {Object} props
- * @param {{name: string, email: string, phoneNumber: string}} props.customer
- * @param {{method: string, address: string}} props.delivery
- * @param {{file: File|null, preview: string|null}} props.payment
+ * @param {{name: string, email: string, phoneNumber: string, address: string}} props.customer
  * @param {boolean} props.isPlacing
  * @param {(stageId: string) => void} props.onEdit
  * @param {() => void} props.onPlaceOrder
  * @param {() => void} props.onBack
  */
-export function ReviewStage({
-  customer,
-  delivery,
-  payment,
-  isPlacing,
-  onEdit,
-  onPlaceOrder,
-  onBack,
-}) {
-  const isDelivery = delivery.method === "delivery";
-
+export function ReviewStage({ customer, isPlacing, onEdit, onPlaceOrder, onBack }) {
   return (
     <StageCard heading="Review your order">
       <div className="rounded-xl border border-border">
@@ -58,44 +46,26 @@ export function ReviewStage({
             <p className="text-body">{customer.phoneNumber}</p>
           </ReviewRow>
 
-          <ReviewRow label="Delivery" onEdit={() => onEdit("delivery")}>
-            {isDelivery ? (
-              <>
-                <p className="font-medium text-foreground">
-                  Standard delivery ({DELIVERY_CITY})
-                </p>
-                <p className="whitespace-pre-line text-body">{delivery.address}</p>
-              </>
-            ) : (
-              <>
-                <p className="font-medium text-foreground">Collect from the merchant</p>
-                <p className="text-body">
-                  Show your rotating pickup code at the store.
-                </p>
-              </>
-            )}
+          <ReviewRow label="Delivery" onEdit={() => onEdit("customer")}>
+            <p className="font-medium text-foreground">Included, no extra charge</p>
+            <p className="whitespace-pre-line text-body">{customer.address}</p>
           </ReviewRow>
 
           <ReviewRow label="Payment" onEdit={() => onEdit("payment")}>
-            <p className="font-medium text-foreground">Bank transfer</p>
-            <p className="text-body">
-              {payment.file?.name ?? "Payment screenshot attached"}
+            <p className="font-medium text-foreground">
+              {PAYMENT_DETAILS.bankName} transfer
             </p>
-            {payment.preview && (
-              <img
-                src={payment.preview}
-                alt="Payment proof"
-                className="mt-2 max-h-24 rounded-lg border border-border object-contain"
-              />
-            )}
+            <p className="tnum text-body">
+              {PAYMENT_DETAILS.accountNumber} · {PAYMENT_DETAILS.accountName}
+            </p>
           </ReviewRow>
         </div>
       </div>
 
       <p className="mt-4 text-xs text-muted">
-        Placing the order reserves your items and locks their prices. An admin reviews
-        your payment proof, usually within 2–3 hours, and your pickup code becomes
-        available once it&apos;s approved.
+        Placing the order reserves your items and locks their prices. Send the payment
+        confirmation screenshot to {WHATSAPP_NUMBER} on WhatsApp and an admin approves
+        it, usually within 2–3 hours.
       </p>
 
       <div className="mt-5 flex flex-col gap-3 sm:flex-row-reverse">

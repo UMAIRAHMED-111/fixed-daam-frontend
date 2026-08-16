@@ -1,25 +1,23 @@
 import { useState } from "react";
 import { ChevronDown, Lock, ShoppingBag } from "lucide-react";
 import { ProductImage } from "@/features/dashboard/components/ProductImage";
-import { formatQuantity } from "@/features/dashboard/data/uomData";
-import { DELIVERY_FEE } from "../constants";
+import { formatQuantity, formatTenor } from "@/features/dashboard/data/uomData";
 import { formatAmount, formatPkr } from "@/lib/money";
-
-
 
 /**
  * Order summary panel, sticky beside the form on desktop, collapsible bar on mobile.
  *
+ * Delivery is included in every purchase, so the total is the goods and nothing
+ * else. The delivery line stays visible to make that plain rather than silent.
+ *
  * @param {Object} props
  * @param {Array} props.items - Cart items
- * @param {boolean} props.isDelivery - Whether the delivery fee applies
  */
-export function OrderSummary({ items, isDelivery }) {
+export function OrderSummary({ items }) {
   const [openOnMobile, setOpenOnMobile] = useState(false);
 
   const subtotal = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
-  const deliveryFee = isDelivery ? DELIVERY_FEE : 0;
-  const total = subtotal + deliveryFee;
+  const total = subtotal;
   const itemCount = items.reduce((sum, i) => sum + i.quantity, 0);
 
   const lines = (
@@ -48,6 +46,11 @@ export function OrderSummary({ items, isDelivery }) {
               <p className="mt-0.5 text-xs text-muted">
                 {formatQuantity(item.quantity, item)}
               </p>
+              {formatTenor(item) && (
+                <p className="mt-0.5 text-xs text-muted">
+                  Valid {formatTenor(item)} after purchase
+                </p>
+              )}
             </div>
             <p className="shrink-0 text-sm font-semibold text-foreground">
               {formatPkr(item.price * item.quantity)}
@@ -63,7 +66,7 @@ export function OrderSummary({ items, isDelivery }) {
         </p>
         <p className="flex justify-between text-body">
           <span>Delivery</span>
-          <span>{isDelivery ? formatPkr(deliveryFee) : "Free pickup"}</span>
+          <span className="font-medium text-success">Included</span>
         </p>
         <p className="flex items-baseline justify-between border-t border-border pt-3 text-base font-bold text-foreground">
           <span>Total</span>

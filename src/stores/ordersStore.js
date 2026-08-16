@@ -24,26 +24,17 @@ export const useOrdersStore = create((set, get) => ({
   },
 
   /**
-   * Create a new order from cart items with a proof-of-payment image.
+   * Create a new order from cart items. Nothing is uploaded: the buyer sends the
+   * payment confirmation over WhatsApp and an admin approves it afterwards.
+   * Delivery ships with every order, so the address is always required.
    * @param {Array<{productId: string, quantity: number}>} cartItems
-   * @param {File} paymentProofFile
-   * @param {{ delivery?: boolean, deliveryAddress?: string }} [options]
+   * @param {string} deliveryAddress
    * @returns {Promise<Order>}
    */
-  addOrder: async (cartItems, paymentProofFile, options = {}) => {
-    const formData = new FormData();
-    formData.append("items", JSON.stringify(cartItems));
-    if (paymentProofFile) {
-      formData.append("paymentProof", paymentProofFile);
-    }
-    if (options.delivery) {
-      formData.append("delivery", "true");
-      if (options.deliveryAddress) {
-        formData.append("deliveryAddress", options.deliveryAddress);
-      }
-    }
-    const res = await api.post("/v1/orders", formData, {
-      headers: { "Content-Type": "multipart/form-data" },
+  addOrder: async (cartItems, deliveryAddress) => {
+    const res = await api.post("/v1/orders", {
+      items: cartItems,
+      deliveryAddress,
     });
     const order = res.data;
     set((state) => ({ orders: [order, ...state.orders] }));
@@ -54,28 +45,16 @@ export const useOrdersStore = create((set, get) => ({
    * Place an order without an account. The contact details identify the buyer and
    * the response carries a token that tracks this one order.
    * @param {Array<{productId: string, quantity: number}>} cartItems
-   * @param {File} paymentProofFile
-   * @param {{name: string, email: string, phoneNumber: string}} contact
-   * @param {{ delivery?: boolean, deliveryAddress?: string }} [options]
+   * @param {{name: string, email: string, phoneNumber: string, address: string}} contact
    * @returns {Promise<{order: Object, guestToken: string}>}
    */
-  addGuestOrder: async (cartItems, paymentProofFile, contact, options = {}) => {
-    const formData = new FormData();
-    formData.append("items", JSON.stringify(cartItems));
-    formData.append("name", contact.name);
-    formData.append("email", contact.email);
-    formData.append("phoneNumber", contact.phoneNumber);
-    if (paymentProofFile) {
-      formData.append("paymentProof", paymentProofFile);
-    }
-    if (options.delivery) {
-      formData.append("delivery", "true");
-      if (options.deliveryAddress) {
-        formData.append("deliveryAddress", options.deliveryAddress);
-      }
-    }
-    const res = await api.post("/v1/orders/guest", formData, {
-      headers: { "Content-Type": "multipart/form-data" },
+  addGuestOrder: async (cartItems, contact) => {
+    const res = await api.post("/v1/orders/guest", {
+      items: cartItems,
+      name: contact.name,
+      email: contact.email,
+      phoneNumber: contact.phoneNumber,
+      deliveryAddress: contact.address,
     });
     return res.data;
   },

@@ -34,6 +34,11 @@ export const useCartStore = create(
                   bundleSize: product.bundleSize ?? null,
                   bundleUom: product.bundleUom ?? null,
                   bundleLabel: product.bundleLabel ?? "",
+                  // Carried so the checkout summary can show how long the
+                  // purchase stays valid. The order's own copy is snapshotted
+                  // server-side from the product, not from this.
+                  tenorValue: product.tenorValue ?? null,
+                  tenorUnit: product.tenorUnit ?? null,
                 },
               ];
           return { items: newItems };

@@ -1,14 +1,18 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Check, Clock, Copy, PackageCheck } from "lucide-react";
+import { Check, Clock, Copy, MessageCircle } from "lucide-react";
 import { toast } from "sonner";
 import { formatAmount } from "@/lib/money";
 import { guestOrderPath } from "@/lib/guestOrders";
+import { WHATSAPP_NUMBER, whatsappLink } from "@/lib/contact";
 
 /**
  * Post-order confirmation: what happens next, not just "thanks".
  *
- * Guests get their tracking link front and centre, since it is the only way back
+ * The one thing the buyer still has to do — send the payment screenshot on
+ * WhatsApp — leads, because the order sits unapproved until they do.
+ *
+ * Guests get their tracking link next, since it is the only way back
  * to the order.
  *
  * @param {Object} props
@@ -17,7 +21,6 @@ import { guestOrderPath } from "@/lib/guestOrders";
  */
 export function OrderPlaced({ order, guestToken }) {
   const [copied, setCopied] = useState(false);
-  const isDelivery = Boolean(order?.delivery);
   const trackPath = guestToken ? guestOrderPath(order?.id, guestToken) : null;
 
   const copyLink = async () => {
@@ -38,11 +41,36 @@ export function OrderPlaced({ order, guestToken }) {
         </div>
         <h1 className="text-xl font-bold text-foreground">Order placed</h1>
         <p className="mt-2 text-body">
-          Your items are reserved and their prices are locked. An admin is reviewing your
-          payment proof, usually within 2 to 3 hours.
+          Your items are reserved and their prices are locked. One step left.
         </p>
 
-        <dl className="mt-6 space-y-2 rounded-xl bg-surface-sunken p-4 text-left text-sm">
+        <div className="mt-6 rounded-xl border border-primary/20 bg-primary-soft p-4 text-left">
+          <p className="flex items-center gap-2 text-sm font-semibold text-primary-ink">
+            <MessageCircle className="h-4 w-4 shrink-0" aria-hidden />
+            Send your payment confirmation
+          </p>
+          <p className="mt-1.5 text-sm text-body">
+            Please send the confirmation screenshot to{" "}
+            <span className="tnum font-semibold text-foreground">{WHATSAPP_NUMBER}</span> on
+            WhatsApp. An admin approves it, usually within 2 to 3 hours.
+          </p>
+          <a
+            href={whatsappLink(
+              `Hi, here is my payment confirmation for order #${order?.id?.slice(-8).toUpperCase()}.`
+            )}
+            target="_blank"
+            rel="noreferrer"
+            className="mt-3 inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground transition-colors duration-[var(--dur-fast)] hover:bg-accent"
+          >
+            <MessageCircle className="h-4 w-4" aria-hidden />
+            Open WhatsApp
+          </a>
+          <p className="mt-2.5 text-xs text-muted">
+            Haven&apos;t paid yet? Place is held either way, we&apos;ll reach out and ask.
+          </p>
+        </div>
+
+        <dl className="mt-4 space-y-2 rounded-xl bg-surface-sunken p-4 text-left text-sm">
           <div className="flex justify-between gap-3">
             <dt className="text-muted">Order</dt>
             <dd className="tnum truncate font-medium text-foreground">
@@ -56,18 +84,14 @@ export function OrderPlaced({ order, guestToken }) {
             </dd>
           </div>
           <div className="flex justify-between gap-3">
-            <dt className="text-muted">Collection</dt>
-            <dd className="font-medium text-foreground">
-              {isDelivery ? "Delivery" : "Pickup from merchant"}
-            </dd>
+            <dt className="text-muted">Delivery</dt>
+            <dd className="font-medium text-foreground">Included</dd>
           </div>
         </dl>
 
-        <p className="mt-4 flex items-start gap-2 rounded-xl bg-primary-soft p-3 text-left text-xs text-body">
-          <PackageCheck className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden />
-          {isDelivery
-            ? "Once your payment is approved, the merchant prepares your order for delivery."
-            : "Once your payment is approved, a rotating pickup code appears on your order. Show it at the store to collect."}
+        <p className="mt-4 rounded-xl bg-surface-sunken p-3 text-left text-xs text-body">
+          Once your payment is approved your order is confirmed. When you require
+          delivery, message us on WhatsApp ({WHATSAPP_NUMBER}) and we&apos;ll arrange it.
         </p>
 
         {trackPath ? (

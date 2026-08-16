@@ -1,15 +1,26 @@
 import { useState, useEffect, useRef } from "react";
-import { Store, ChevronDown, ChevronUp, RefreshCw, Package, CheckCircle2 } from "lucide-react";
+import {
+  Store,
+  ChevronDown,
+  ChevronUp,
+  RefreshCw,
+  Package,
+  CalendarClock,
+  CheckCircle2,
+} from "lucide-react";
 import { api } from "@/lib/api";
 import {
   formatQuantity,
+  formatTenor,
   getUom,
   getDeliverableTotal,
+  getTenorExpiry,
   formatDeliverableQty,
   getRemainingDeliverable,
 } from "@/features/dashboard/data/uomData";
 import { PickupHistory } from "./PickupHistory";
 import { formatAmount } from "@/lib/money";
+import { WHATSAPP_NUMBER, whatsappLink } from "@/lib/contact";
 
 const TOTP_WINDOW = 120; // seconds, keep in sync with backend STEP_SECONDS
 
@@ -156,7 +167,7 @@ export function OrderCard({ order }) {
 
   const statusConfig = {
     pending_verification: { label: "Pending verification", className: "bg-amber-100 text-amber-700" },
-    locked: { label: "Preparing", className: "bg-blue-100 text-blue-800" },
+    locked: { label: "Confirmed", className: "bg-blue-100 text-blue-800" },
     ready: { label: "Ready for pickup", className: "bg-emerald-100 text-emerald-800" },
     delivered: { label: "Delivered", className: "bg-surface-sunken text-body" },
     rejected: { label: "Rejected", className: "bg-red-100 text-red-700" },
@@ -210,6 +221,10 @@ export function OrderCard({ order }) {
                 const remaining = Math.max(0, total - delivered);
                 const showProgress = (isReady || isDelivered) && total > 0;
                 const fullyCollected = remaining <= 1e-6;
+                // Tenor was snapshotted at order time, so this window is the one
+                // the buyer actually paid for, not whatever the product says now.
+                const tenor = formatTenor(item);
+                const expiry = getTenorExpiry(item, order.createdAt);
                 return (
                   <li key={i} className="flex flex-col gap-0.5 text-sm">
                     <div className="flex items-center justify-between gap-4">
@@ -225,6 +240,14 @@ export function OrderCard({ order }) {
                       <span className="inline-flex items-center gap-1 self-start text-[11px] text-violet-700">
                         <Package className="h-3 w-3" />
                         {item.bundleSize} {innerUom.short} per {item.bundleLabel?.trim() || "bundle"}
+                      </span>
+                    )}
+                    {tenor && (
+                      <span className="inline-flex items-center gap-1 self-start text-[11px] text-muted">
+                        <CalendarClock className="h-3 w-3" aria-hidden />
+                        Valid {tenor}
+                        {expiry &&
+                          ` · until ${expiry.toLocaleDateString(undefined, { dateStyle: "medium" })}`}
                       </span>
                     )}
                     {showProgress && (
@@ -256,7 +279,18 @@ export function OrderCard({ order }) {
       <div className="border-t border-border px-5 py-4">
         {isPending && (
           <p className="text-xs text-amber-700 bg-amber-50 rounded-lg px-3 py-2">
-            Payment proof submitted. Verification takes 2–3 hours. Your price is locked in.
+            Your price is locked in. Please send the payment confirmation screenshot to{" "}
+            <a
+              href={whatsappLink(
+                `Hi, here is my payment confirmation for order #${order.id?.slice(-8).toUpperCase()}.`
+              )}
+              target="_blank"
+              rel="noreferrer"
+              className="tnum font-semibold underline"
+            >
+              {WHATSAPP_NUMBER}
+            </a>{" "}
+            on WhatsApp. Verification takes 2–3 hours.
           </p>
         )}
 
@@ -299,8 +333,20 @@ export function OrderCard({ order }) {
             )}
 
             {isLocked && (
-              <p className="ml-auto text-xs text-muted">
-                Store is preparing your order
+              <p className="w-full text-xs text-body">
+                Order is confirmed — when you require delivery please contact us on
+                WhatsApp (
+                <a
+                  href={whatsappLink(
+                    `Hi, I'd like to arrange delivery for order #${order.id?.slice(-8).toUpperCase()}.`
+                  )}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="tnum font-semibold text-primary hover:underline"
+                >
+                  {WHATSAPP_NUMBER}
+                </a>
+                ).
               </p>
             )}
 
