@@ -1,9 +1,9 @@
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { ShieldCheck } from "lucide-react";
+import { ChevronLeft, ShieldCheck } from "lucide-react";
 import { loginSchema } from "./schemas/authSchemas";
 import { useAuthStore } from "@/stores/authStore";
 import { api } from "@/lib/api";
@@ -50,7 +50,7 @@ export function AdminLoginPage() {
   };
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] flex flex-col items-center justify-center px-4 py-12 bg-background">
+    <div className="min-h-screen flex flex-col items-center justify-center px-4 py-12 bg-background">
       <div className="w-full max-w-md rounded-2xl border border-border bg-surface p-6 shadow-lg sm:p-8">
         <div className="flex items-center gap-3 mb-1">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-50">
@@ -78,6 +78,14 @@ export function AdminLoginPage() {
           </button>
         </form>
       </div>
+
+      <Link
+        to="/"
+        className="mt-6 inline-flex min-h-[44px] items-center gap-2 rounded-lg px-3 text-sm font-medium text-muted transition-colors hover:bg-surface-sunken hover:text-foreground"
+      >
+        <ChevronLeft className="h-4 w-4" aria-hidden />
+        Back to the shop
+      </Link>
     </div>
   );
 }

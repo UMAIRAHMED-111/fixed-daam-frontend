@@ -7,13 +7,15 @@ export function Layout() {
   const location = useLocation();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const isDashboard = location.pathname.startsWith("/dashboard");
-  // Checkout ships its own minimal header so nothing competes with completing the order.
-  const isCheckout =
-    location.pathname.startsWith("/checkout") || location.pathname.startsWith("/track");
+  // Focused pages carry their own framing: checkout, order tracking, and the
+  // merchant and admin doors. A shop nav on those only invites a wrong turn.
+  const isFocusedPage = ["/checkout", "/track", "/merchant", "/admin"].some((path) =>
+    location.pathname.startsWith(path)
+  );
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      {isCheckout ? null : isDashboard && isAuthenticated ? (
+      {isFocusedPage ? null : isDashboard && isAuthenticated ? (
         <DashboardNav />
       ) : !isDashboard ? (
         <LandingNav />

@@ -1,51 +1,67 @@
 /**
- * FixedDaam logo: FD mark image + wordmark. Use for nav and marketing.
- * @param {Object} props
- * @param {"default"|"compact"} [props.variant="default"] - compact hides wordmark on small screens
- * @param {string} [props.className]
- * @param {boolean} [props.dark] - no effect when using image logo
+ * FixedDaam logo: a padlock mark plus the wordmark.
+ *
+ * The mark is inline SVG rather than the bitmap in /public, which is a JPEG
+ * without transparency and shows a white box on dark surfaces. Inline also means
+ * it stays crisp and can take the surrounding text colour.
  */
-export function Logo({ variant = "default", className = "", dark = false }) {
-  const textClass = dark ? "text-white" : "text-foreground";
-  const accentClass = dark ? "text-white" : "text-primary";
-
+function LockMark({ className = "h-8 w-8" }) {
   return (
-    <span
-      className={`inline-flex items-center gap-2 font-semibold tracking-tight ${className}`}
-      aria-hidden
-    >
-      <img
-        src="/logo.png"
-        alt=""
-        // Header is 4rem tall, the mark has to sit inside it, not overrun it.
-        className="h-9 w-auto shrink-0 object-contain sm:h-10"
-        width={40}
-        height={40}
-        fetchpriority="high"
+    <svg viewBox="0 0 32 32" fill="none" className={className} aria-hidden focusable="false">
+      <rect width="32" height="32" rx="8" fill="var(--color-primary)" />
+      <path
+        d="M10 20V14a6 6 0 0 1 12 0v6"
+        stroke="var(--color-primary-foreground)"
+        strokeWidth="2.25"
+        strokeLinecap="round"
       />
-      <span className={`text-lg sm:text-xl ${textClass} hidden sm:inline`}>
-        Fixed<span className={accentClass}>Daam</span>
-      </span>
-      {variant !== "compact" && (
-        <span className={`text-lg sm:text-xl ${textClass} sm:hidden`}>
-          Fixed<span className={accentClass}>Daam</span>
-        </span>
-      )}
-    </span>
+      <rect
+        x="9"
+        y="19"
+        width="14"
+        height="9"
+        rx="2.5"
+        stroke="var(--color-primary-foreground)"
+        strokeWidth="2"
+      />
+      <path
+        d="M13 24l2.5 2.5L21 21"
+        stroke="var(--color-primary-foreground)"
+        strokeWidth="1.75"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
   );
 }
 
 /**
- * Icon-only: FD logo image. Use when only the mark is needed (e.g. footer).
+ * @param {Object} props
+ * @param {"default"|"compact"} [props.variant="default"] - compact hides the wordmark on phones
+ * @param {boolean} [props.dark=false] - set on dark surfaces so the wordmark stays legible
+ * @param {string} [props.className]
  */
-export function LogoIcon({ className = "h-8 w-auto" }) {
+export function Logo({ variant = "default", className = "", dark = false }) {
+  const wordClass = dark ? "text-chalk" : "text-foreground";
+  const accentClass = dark ? "text-stamp" : "text-primary";
+
   return (
-    <img
-      src="/logo.png"
-      alt="FixedDaam"
-      className={`object-contain ${className}`}
-      width={32}
-      height={32}
-    />
+    <span
+      className={`inline-flex items-center gap-2.5 font-bold tracking-[-0.01em] ${className}`}
+    >
+      <LockMark className="h-8 w-8 shrink-0" />
+      <span
+        className={`text-lg sm:text-xl ${wordClass} ${
+          variant === "compact" ? "hidden sm:inline" : ""
+        }`}
+      >
+        Fixed<span className={accentClass}>Daam</span>
+      </span>
+    </span>
   );
+}
+
+/** Icon only, for tight spaces such as the footer. */
+export function LogoIcon({ className = "h-8 w-8" }) {
+  return <LockMark className={className} />;
 }

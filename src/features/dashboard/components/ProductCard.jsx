@@ -32,7 +32,7 @@ export function ProductCard({ product }) {
         <ProductImage
           product={product}
           alt=""
-          className="h-full w-full object-cover transition-transform duration-500 ease-[var(--ease-out-quart)] group-hover:scale-[1.04]"
+          className="h-full w-full object-contain p-4 transition-transform duration-500 ease-[var(--ease-out-quart)] group-hover:scale-[1.04]"
         />
         {isBundle && (
           <Badge tone="brand" size="sm" className="absolute left-2.5 top-2.5 bg-surface/95 backdrop-blur">

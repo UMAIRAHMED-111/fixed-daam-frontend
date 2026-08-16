@@ -1,7 +1,7 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import { Layout } from "@/components/layout/Layout";
 import { HomePage } from "@/features/home";
-import { AuthPage, VerifyEmailPage, AdminLoginPage } from "@/features/auth";
+import { AuthPage, MerchantAuthPage, VerifyEmailPage, AdminLoginPage } from "@/features/auth";
 import { DashboardPage, DashboardIndex, DashboardOrdersPage } from "@/features/dashboard";
 import { ProductDetailPage } from "@/features/dashboard/pages/ProductDetailPage";
 import { MerchantInventoryPage } from "@/features/dashboard/pages/MerchantInventoryPage";
@@ -13,6 +13,7 @@ import { AdminMerchantsPage } from "@/features/dashboard/pages/AdminMerchantsPag
 import { AdminBuyersPage } from "@/features/dashboard/pages/AdminBuyersPage";
 import { CheckoutPage } from "@/features/checkout";
 import { GuestOrderPage } from "@/features/checkout/GuestOrderPage";
+import { GuestOrdersPage } from "@/features/checkout/GuestOrdersPage";
 import { NotFoundPage } from "@/features/not-found";
 import { TermsPage } from "@/features/legal/TermsPage";
 import { PrivacyPage } from "@/features/legal/PrivacyPage";
@@ -23,7 +24,10 @@ export default function App() {
     <Routes>
       <Route element={<Layout />}>
         <Route path="/" element={<HomePage />} />
+        {/* Buyers, merchants and admins each get their own door, so nobody
+            signs in on the wrong side and hits a role mismatch. */}
         <Route path="/auth" element={<AuthPage />} />
+        <Route path="/merchant" element={<MerchantAuthPage />} />
         <Route path="/admin" element={<AdminLoginPage />} />
         <Route path="/verify-email" element={<VerifyEmailPage />} />
         {/* Public storefront product page, browsing needs no account */}
@@ -31,6 +35,7 @@ export default function App() {
         {/* Staged checkout, signing in happens at the contact step */}
         <Route path="/checkout" element={<CheckoutPage />} />
         {/* Guest order tracking: the token in the link stands in for a session */}
+        <Route path="/track" element={<GuestOrdersPage />} />
         <Route path="/track/:orderId" element={<GuestOrderPage />} />
         <Route
           path="/dashboard"

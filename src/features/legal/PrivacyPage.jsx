@@ -25,7 +25,7 @@ export function PrivacyPage() {
             <ul className="list-disc list-inside space-y-1">
               <li><strong>Account data</strong>, name, email address, password (stored hashed), and account type (Buyer or Merchant).</li>
               <li><strong>Business data (Merchants only)</strong>, business name, contact details, and product listings including descriptions, images, and prices.</li>
-              <li><strong>Order data</strong>, products locked, quantities, order statuses, and QR code identifiers.</li>
+              <li><strong>Order data</strong>, products held, quantities, order statuses, and pickup code identifiers.</li>
               <li><strong>Payment data</strong>, payment screenshots or confirmations uploaded to verify transactions. We do not store full card numbers or bank credentials.</li>
             </ul>
 

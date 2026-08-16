@@ -1,71 +1,54 @@
-import { useState } from "react";
-import { useSearchParams, useNavigate } from "react-router-dom";
-import { ChevronLeft } from "lucide-react";
+import { Link, Navigate, useSearchParams } from "react-router-dom";
+import { ChevronLeft, Store } from "lucide-react";
 import { AuthForm } from "./components/AuthForm";
-import { cn } from "@/lib/cn";
 
-const AUTH_TYPE_BUYER = "buyer";
-const AUTH_TYPE_MERCHANT = "merchant";
-
+/**
+ * Buyer sign-in.
+ *
+ * Buyers and merchants sign in through separate doors. Sharing one card with a
+ * role toggle meant people picked the wrong side and hit a role mismatch, so
+ * each account type now gets a page that looks and reads like its own thing.
+ */
 export function AuthPage() {
   const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
-  const paramType = searchParams.get("type");
-  const initialType =
-    paramType === AUTH_TYPE_MERCHANT ? AUTH_TYPE_MERCHANT : AUTH_TYPE_BUYER;
-  const [authType, setAuthType] = useState(initialType);
 
-  const isBuyer = authType === AUTH_TYPE_BUYER;
+  // Old links carried ?type=merchant. Send those to the merchant door.
+  if (searchParams.get("type") === "merchant") {
+    return <Navigate to="/merchant" replace />;
+  }
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] flex flex-col items-center justify-center px-4 py-12 bg-background [padding-left:max(1rem,env(safe-area-inset-left))] [padding-right:max(1rem,env(safe-area-inset-right))] [padding-bottom:max(3rem,env(safe-area-inset-bottom))]">
-      <div className="w-full max-w-md rounded-2xl border border-border bg-surface p-6 shadow-lg sm:p-8">
-        <h1 className="text-xl font-bold text-foreground">
-          {isBuyer ? "Buyer" : "Merchant"} account
+    <div className="flex min-h-[calc(100vh-4rem)] flex-col items-center justify-center bg-background px-4 py-12 [padding-bottom:max(3rem,env(safe-area-inset-bottom))]">
+      <div className="w-full max-w-md rounded-2xl border border-border bg-surface p-6 shadow-[var(--shadow-e2)] sm:p-8">
+        <p className="label-cap text-primary">Shopping</p>
+        <h1 className="mt-2 text-2xl font-bold tracking-[-0.02em] text-foreground">
+          Sign in to buy
         </h1>
-        <p className="mt-1 text-sm text-body">
-          {isBuyer
-            ? "Sign in or create an account to lock in prices and get your QR codes."
-            : "Sign in or create an account to add inventory and manage orders."}
+        <p className="mt-1.5 text-sm text-body">
+          Hold today&apos;s price, keep your pickup code, and see everything waiting for
+          you at the shop.
         </p>
-        <div className="mt-6 flex rounded-lg border border-border bg-surface-sunken p-1">
-          <button
-            type="button"
-            onClick={() => setAuthType(AUTH_TYPE_BUYER)}
-            className={cn(
-              "flex-1 rounded-md py-2.5 text-sm font-medium transition min-h-[44px]",
-              isBuyer
-                ? "bg-surface text-foreground shadow"
-                : "text-body hover:text-foreground"
-            )}
-          >
-            Buyer
-          </button>
-          <button
-            type="button"
-            onClick={() => setAuthType(AUTH_TYPE_MERCHANT)}
-            className={cn(
-              "flex-1 rounded-md py-2.5 text-sm font-medium transition min-h-[44px]",
-              !isBuyer
-                ? "bg-surface text-foreground shadow"
-                : "text-body hover:text-foreground"
-            )}
-          >
-            Merchant
-          </button>
-        </div>
-        <div className="mt-6" key={authType}>
-          <AuthForm authType={authType} />
+
+        <div className="mt-6">
+          <AuthForm authType="buyer" />
         </div>
       </div>
-      <button
-        type="button"
-        onClick={() => navigate("/")}
-        className="mt-6 min-h-[44px] -ml-1 inline-flex items-center gap-2 rounded-lg pl-1 pr-3 py-2.5 text-sm font-medium text-body hover:bg-slate-200 hover:text-foreground touch-manipulation"
+
+      <Link
+        to="/merchant"
+        className="mt-6 inline-flex min-h-[44px] items-center gap-2 rounded-lg px-3 text-sm font-medium text-body transition-colors hover:bg-surface-sunken hover:text-foreground"
       >
-        <ChevronLeft className="h-5 w-5 shrink-0" aria-hidden />
-        Back to home
-      </button>
+        <Store className="h-4 w-4 text-muted" aria-hidden />
+        Selling on FixedDaam? Go to merchant sign-in
+      </Link>
+
+      <Link
+        to="/"
+        className="mt-1 inline-flex min-h-[44px] items-center gap-2 rounded-lg px-3 text-sm font-medium text-muted transition-colors hover:bg-surface-sunken hover:text-foreground"
+      >
+        <ChevronLeft className="h-4 w-4" aria-hidden />
+        Back to the shop
+      </Link>
     </div>
   );
 }

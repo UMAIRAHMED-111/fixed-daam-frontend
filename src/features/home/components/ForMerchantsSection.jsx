@@ -15,7 +15,7 @@ export function ForMerchantsSection() {
       <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-24 lg:px-8">
         <div className="grid gap-12 lg:grid-cols-[0.9fr_1.1fr] lg:gap-20">
           <Reveal>
-            <h2 className="text-[clamp(1.75rem,3.5vw,2.75rem)] font-extrabold tracking-[-0.03em] text-foreground">
+            <h2 className="text-display text-[clamp(2.25rem,5vw,3.25rem)] text-foreground">
               Sell today. Hand over later.
             </h2>
             <p className="mt-4 text-lg leading-relaxed text-body">
@@ -23,7 +23,7 @@ export function ForMerchantsSection() {
               shows their code. Cash in hand now, no card terminal, no chargebacks.
             </p>
             <Link
-              to="/auth?type=merchant"
+              to="/merchant"
               className="mt-8 inline-flex min-h-[52px] items-center justify-center rounded-2xl bg-primary px-7 text-base font-semibold text-primary-foreground shadow-[var(--shadow-brand)] transition-[background-color,transform] duration-[var(--dur-fast)] hover:bg-accent active:translate-y-px"
             >
               Open a merchant account

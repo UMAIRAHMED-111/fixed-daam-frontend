@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Store } from "lucide-react";
 import { SearchBar } from "@/features/dashboard/components/SearchBar";
 import { ProductCard } from "@/features/dashboard/components/ProductCard";
@@ -7,30 +7,34 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { useInventoryStore } from "@/stores/inventoryStore";
 
 /**
- * Public storefront, browse merchants and their stock without an account.
- * Grouped by merchant, because "who am I collecting from" is the question a
- * buyer actually has before they lock a price.
+ * The shop. Grouped by merchant, because a buyer collects in person and needs to
+ * know whose counter they are walking up to.
  */
 export function StorefrontSection() {
   const [search, setSearch] = useState("");
+  const [category, setCategory] = useState("all");
 
   const products = useInventoryStore((s) => s.products);
   const loading = useInventoryStore((s) => s.loading);
-  const fetchAllProducts = useInventoryStore((s) => s.fetchAllProducts);
 
-  useEffect(() => {
-    fetchAllProducts();
-  }, [fetchAllProducts]);
+  const categories = useMemo(() => {
+    const counts = new Map();
+    products.forEach((p) => {
+      if (!p.category) return;
+      counts.set(p.category, (counts.get(p.category) ?? 0) + 1);
+    });
+    return [...counts.entries()].sort((a, b) => b[1] - a[1]);
+  }, [products]);
 
   const merchants = useMemo(() => {
     const q = search.trim().toLowerCase();
-    const matched = q
-      ? products.filter((p) =>
-          [p.name, p.description, p.category, p.merchantName]
-            .filter(Boolean)
-            .some((field) => field.toLowerCase().includes(q))
-        )
-      : products;
+    const matched = products.filter((p) => {
+      if (category !== "all" && p.category !== category) return false;
+      if (!q) return true;
+      return [p.name, p.description, p.category, p.merchantName]
+        .filter(Boolean)
+        .some((field) => field.toLowerCase().includes(q));
+    });
 
     const groups = new Map();
     matched.forEach((p) => {
@@ -41,31 +45,60 @@ export function StorefrontSection() {
       groups.get(key).products.push(p);
     });
     return [...groups.values()].sort((a, b) => a.name.localeCompare(b.name));
-  }, [products, search]);
+  }, [products, search, category]);
 
-  const totalShown = merchants.reduce((sum, m) => sum + m.products.length, 0);
+  const shown = merchants.reduce((sum, m) => sum + m.products.length, 0);
+  const isFiltered = Boolean(search.trim()) || category !== "all";
+
+  const chip = (id, label, count) => (
+    <button
+      key={id}
+      type="button"
+      onClick={() => setCategory(id)}
+      aria-pressed={category === id}
+      className={`inline-flex min-h-[38px] items-center gap-1.5 rounded-full border px-4 text-sm font-medium transition-colors duration-[var(--dur-fast)] ${
+        category === id
+          ? "border-foreground bg-foreground text-background"
+          : "border-border-strong bg-surface text-body hover:border-foreground/40 hover:text-foreground"
+      }`}
+    >
+      {label}
+      {count != null && (
+        <span className={`tnum text-xs ${category === id ? "opacity-70" : "text-muted"}`}>
+          {count}
+        </span>
+      )}
+    </button>
+  );
 
   return (
-    <section id="shop" className="scroll-mt-16 border-t border-border bg-background">
-      <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-24 lg:px-8">
-        <div className="flex flex-col gap-6 border-b border-border pb-8 sm:flex-row sm:items-end sm:justify-between">
+    <section id="shop" className="scroll-mt-16 bg-background">
+      <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-20 lg:px-8">
+        <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <h2 className="text-[clamp(1.75rem,3.5vw,2.75rem)] font-extrabold tracking-[-0.03em] text-foreground">
-              What&apos;s in the market today
+            <h2 className="text-display text-[clamp(2.25rem,5vw,3.25rem)] text-foreground">
+              The shop
             </h2>
             <p className="mt-3 max-w-[52ch] text-lg leading-relaxed text-body">
-              Every price below is the price you pay, locked the moment you check out.
-              No account needed to look around.
+              Every price here is the price you pay, fixed the moment you check out.
+              Browse without an account.
             </p>
           </div>
           <div className="w-full sm:max-w-xs">
             <SearchBar
               value={search}
               onChange={setSearch}
-              placeholder="Search products or stores…"
+              placeholder="Search an item or a shop…"
             />
           </div>
         </div>
+
+        {categories.length > 1 && (
+          <div className="mt-7 flex flex-wrap gap-2">
+            {chip("all", "Everything", products.length)}
+            {categories.map(([name, count]) => chip(name, name, count))}
+          </div>
+        )}
 
         {loading && products.length === 0 ? (
           <SkeletonCards className="mt-10" count={6} />
@@ -73,19 +106,33 @@ export function StorefrontSection() {
           <EmptyState
             className="mt-10"
             icon={Store}
-            title={search ? `Nothing matches “${search}”` : "No products listed yet"}
+            title={isFiltered ? "Nothing matches that" : "No products listed yet"}
             description={
-              search
-                ? "Try a different product or store name."
-                : "Merchants are still stocking their shelves, check back shortly."
+              isFiltered
+                ? "Try another item or shop name, or clear the filter."
+                : "Shops are still stocking their shelves. Check back shortly."
+            }
+            action={
+              isFiltered ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearch("");
+                    setCategory("all");
+                  }}
+                  className="inline-flex min-h-[44px] items-center justify-center rounded-xl border border-border-strong bg-surface px-5 text-sm font-medium text-foreground transition-colors hover:bg-surface-sunken"
+                >
+                  Show everything
+                </button>
+              ) : null
             }
           />
         ) : (
-          <div className="mt-12 space-y-16">
+          <div className="mt-10 space-y-14">
             {merchants.map((merchant) => (
               <section key={merchant.name} aria-label={merchant.name}>
-                <div className="mb-6 flex items-baseline justify-between gap-4 border-b border-border pb-3">
-                  <h3 className="flex items-center gap-2.5 text-lg font-bold tracking-[-0.01em] text-foreground">
+                <div className="mb-5 flex items-baseline justify-between gap-4 border-b-2 border-foreground pb-2.5">
+                  <h3 className="flex items-center gap-2.5 text-xl font-bold tracking-[-0.01em] text-foreground">
                     <Store className="h-4 w-4 text-primary" aria-hidden />
                     {merchant.name}
                   </h3>
@@ -104,9 +151,19 @@ export function StorefrontSection() {
           </div>
         )}
 
-        {search && totalShown > 0 && (
+        {isFiltered && shown > 0 && (
           <p className="tnum mt-8 text-sm text-muted">
-            {totalShown} {totalShown === 1 ? "result" : "results"} for “{search}”
+            {shown} {shown === 1 ? "item" : "items"} shown.{" "}
+            <button
+              type="button"
+              onClick={() => {
+                setSearch("");
+                setCategory("all");
+              }}
+              className="font-medium text-primary hover:underline"
+            >
+              Show everything
+            </button>
           </p>
         )}
       </div>

@@ -113,8 +113,8 @@ export function ProductDetailPage() {
               {product.images?.length ? (
                 <img
                   src={images[slideIndex]}
-                  alt=""
-                  className="h-full w-full object-cover"
+                  alt={product.name}
+                  className="h-full w-full object-contain p-6"
                 />
               ) : (
                 <ProductImage

@@ -11,8 +11,8 @@ export function CtaSection() {
     <section className="bg-primary">
       <div className="mx-auto max-w-4xl px-4 py-20 text-center sm:px-6 sm:py-28 lg:px-8">
         <Reveal>
-          <h2 className="text-[clamp(2rem,5vw,3.5rem)] font-extrabold leading-[1.05] tracking-[-0.035em] text-primary-foreground">
-            Today&apos;s price, tomorrow&apos;s groceries.
+          <h2 className="text-display text-[clamp(2.5rem,6vw,4rem)] text-primary-foreground">
+            Buy at today&apos;s price. Collect any day.
           </h2>
           <p className="mx-auto mt-5 max-w-[48ch] text-lg leading-relaxed text-primary-foreground/90">
             Join {APP_NAME}, lock what you need at the rate you see now, and collect it
