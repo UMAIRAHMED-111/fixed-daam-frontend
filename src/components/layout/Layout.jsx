@@ -7,10 +7,13 @@ export function Layout() {
   const location = useLocation();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const isDashboard = location.pathname.startsWith("/dashboard");
+  // Checkout ships its own minimal header so nothing competes with completing the order.
+  const isCheckout =
+    location.pathname.startsWith("/checkout") || location.pathname.startsWith("/track");
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      {isDashboard && isAuthenticated ? (
+      {isCheckout ? null : isDashboard && isAuthenticated ? (
         <DashboardNav />
       ) : !isDashboard ? (
         <LandingNav />

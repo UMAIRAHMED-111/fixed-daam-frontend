@@ -48,14 +48,14 @@ export function VerifyEmailPage() {
   }, [status, countdown, navigate]);
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center px-4 py-12 bg-slate-50">
-      <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-lg sm:p-8 text-center">
+    <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center px-4 py-12 bg-background">
+      <div className="w-full max-w-md rounded-2xl border border-border bg-surface p-6 shadow-lg sm:p-8 text-center">
 
         {status === "loading" && (
           <>
-            <div className="mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-4 border-slate-200 border-t-primary" />
-            <h1 className="text-lg font-semibold text-slate-900">Verifying your email…</h1>
-            <p className="mt-2 text-sm text-slate-500">Please wait a moment.</p>
+            <div className="mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-4 border-border border-t-primary" />
+            <h1 className="text-lg font-semibold text-foreground">Verifying your email…</h1>
+            <p className="mt-2 text-sm text-muted">Please wait a moment.</p>
           </>
         )}
 
@@ -66,16 +66,16 @@ export function VerifyEmailPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
               </svg>
             </div>
-            <h1 className="text-xl font-bold text-slate-900">Email verified!</h1>
-            <p className="mt-2 text-slate-600">{message}</p>
-            <p className="mt-4 text-sm text-slate-500">
+            <h1 className="text-xl font-bold text-foreground">Email verified!</h1>
+            <p className="mt-2 text-body">{message}</p>
+            <p className="mt-4 text-sm text-muted">
               Redirecting to sign in in{" "}
               <span className="font-semibold text-primary">{countdown}</span> second{countdown !== 1 ? "s" : ""}…
             </p>
             <button
               type="button"
               onClick={() => navigate("/auth")}
-              className="mt-4 w-full min-h-[48px] inline-flex items-center justify-center rounded-xl bg-primary px-4 text-sm font-semibold text-white shadow-lg shadow-primary/25 hover:bg-orange-600 transition-colors"
+              className="mt-4 w-full min-h-[48px] inline-flex items-center justify-center rounded-xl bg-primary px-4 text-sm font-semibold text-white shadow-lg shadow-primary/25 hover:bg-accent transition-colors"
             >
               Sign in now
             </button>
@@ -89,12 +89,12 @@ export function VerifyEmailPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
               </svg>
             </div>
-            <h1 className="text-xl font-bold text-slate-900">Verification failed</h1>
-            <p className="mt-2 text-slate-600">{message}</p>
+            <h1 className="text-xl font-bold text-foreground">Verification failed</h1>
+            <p className="mt-2 text-body">{message}</p>
             <button
               type="button"
               onClick={() => navigate("/auth")}
-              className="mt-6 w-full min-h-[48px] inline-flex items-center justify-center rounded-xl bg-primary px-4 text-sm font-semibold text-white shadow-lg shadow-primary/25 hover:bg-orange-600 transition-colors"
+              className="mt-6 w-full min-h-[48px] inline-flex items-center justify-center rounded-xl bg-primary px-4 text-sm font-semibold text-white shadow-lg shadow-primary/25 hover:bg-accent transition-colors"
             >
               Back to sign in
             </button>

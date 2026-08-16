@@ -1,6 +1,6 @@
 /**
  * Curated stock images per product category (Unsplash CDN).
- * Each category has a small pool — we deterministically pick one based on the
+ * Each category has a small pool, we deterministically pick one based on the
  * product id so the same product keeps the same fallback image across renders.
  *
  * If the URL ever fails to load (network/Unsplash issue), the <ProductImage>
@@ -73,10 +73,10 @@ export const CATEGORY_TINT = {
   home: "bg-amber-100 text-amber-700",
   fashion: "bg-rose-100 text-rose-700",
   sports: "bg-violet-100 text-violet-700",
-  default: "bg-slate-100 text-slate-500",
+  default: "bg-surface-sunken text-muted",
 };
 
-/** djb2-style stable hash over a string — used to pick an image deterministically. */
+/** djb2-style stable hash over a string, used to pick an image deterministically. */
 function stableHash(str) {
   let hash = 5381;
   const s = String(str ?? "");

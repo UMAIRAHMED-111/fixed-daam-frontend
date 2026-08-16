@@ -6,7 +6,7 @@
  * @param {boolean} [props.dark] - no effect when using image logo
  */
 export function Logo({ variant = "default", className = "", dark = false }) {
-  const textClass = dark ? "text-white" : "text-slate-900";
+  const textClass = dark ? "text-white" : "text-foreground";
   const accentClass = dark ? "text-white" : "text-primary";
 
   return (
@@ -17,9 +17,10 @@ export function Logo({ variant = "default", className = "", dark = false }) {
       <img
         src="/logo.png"
         alt=""
-        className="h-16 w-auto sm:h-16 shrink-0 object-contain"
-        width={36}
-        height={36}
+        // Header is 4rem tall, the mark has to sit inside it, not overrun it.
+        className="h-9 w-auto shrink-0 object-contain sm:h-10"
+        width={40}
+        height={40}
         fetchpriority="high"
       />
       <span className={`text-lg sm:text-xl ${textClass} hidden sm:inline`}>

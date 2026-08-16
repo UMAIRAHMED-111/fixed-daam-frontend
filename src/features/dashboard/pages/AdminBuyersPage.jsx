@@ -17,6 +17,7 @@ import { useAuthStore } from "@/stores/authStore";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
 import { formatQuantity } from "../data/uomData";
+import { formatAmount } from "@/lib/money";
 
 const STATUS_LABEL = {
   pending_verification: "Pending",
@@ -30,13 +31,13 @@ const STATUS_BADGE = {
   pending_verification: "bg-amber-100 text-amber-700",
   locked: "bg-blue-100 text-blue-800",
   ready: "bg-emerald-100 text-emerald-800",
-  delivered: "bg-slate-100 text-slate-600",
+  delivered: "bg-surface-sunken text-body",
   rejected: "bg-red-100 text-red-700",
 };
 
 function StatPill({ Icon, value, label, tone = "slate" }) {
   const tones = {
-    slate: "bg-slate-50 text-slate-700",
+    slate: "bg-background text-body",
     primary: "bg-primary/10 text-primary",
     emerald: "bg-emerald-50 text-emerald-700",
     amber: "bg-amber-50 text-amber-700",
@@ -76,20 +77,20 @@ function BuyerDetail({ buyerId }) {
   }, [buyerId]);
 
   if (loading) {
-    return <div className="px-5 py-4 text-sm text-slate-500">Loading details…</div>;
+    return <div className="px-5 py-4 text-sm text-muted">Loading details…</div>;
   }
   if (!data) return null;
 
   const { orders } = data;
 
   return (
-    <div className="border-t border-slate-100 bg-slate-50/50 px-5 py-5">
-      <h4 className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-700">
+    <div className="border-t border-border bg-slate-50/50 px-5 py-5">
+      <h4 className="mb-3 flex items-center gap-2 text-sm font-semibold text-body">
         <ShoppingBag className="h-4 w-4 text-primary" />
         Orders ({orders.length})
       </h4>
       {orders.length === 0 ? (
-        <p className="text-xs text-slate-500">No orders placed yet.</p>
+        <p className="text-xs text-muted">No orders placed yet.</p>
       ) : (
         <ul className="space-y-2">
           {orders.map((o) => {
@@ -99,7 +100,7 @@ function BuyerDetail({ buyerId }) {
             return (
               <li
                 key={o.id}
-                className="rounded-xl border border-slate-200 bg-white px-4 py-3"
+                className="rounded-xl border border-border bg-surface px-4 py-3"
               >
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="flex flex-wrap items-center gap-2">
@@ -110,16 +111,16 @@ function BuyerDetail({ buyerId }) {
                     >
                       {STATUS_LABEL[o.status] ?? o.status}
                     </span>
-                    <span className="font-mono text-xs text-slate-400">
+                    <span className="font-mono text-xs text-muted">
                       #{o.id.slice(-8).toUpperCase()}
                     </span>
                     {o.redemptionCode && (
-                      <span className="font-mono text-[11px] text-slate-500">
+                      <span className="font-mono text-[11px] text-muted">
                         Code: {o.redemptionCode}
                       </span>
                     )}
                   </div>
-                  <span className="text-xs text-slate-500">
+                  <span className="text-xs text-muted">
                     {new Date(o.createdAt).toLocaleString(undefined, {
                       dateStyle: "medium",
                       timeStyle: "short",
@@ -128,10 +129,10 @@ function BuyerDetail({ buyerId }) {
                 </div>
 
                 {merchantNames.length > 0 && (
-                  <p className="mt-1.5 flex flex-wrap items-center gap-1 text-xs text-slate-600">
-                    <Store className="h-3 w-3 text-slate-400" />
-                    <span className="text-slate-500">From:</span>
-                    <span className="font-medium text-slate-800">
+                  <p className="mt-1.5 flex flex-wrap items-center gap-1 text-xs text-body">
+                    <Store className="h-3 w-3 text-muted" />
+                    <span className="text-muted">From:</span>
+                    <span className="font-medium text-foreground">
                       {merchantNames.join(", ")}
                     </span>
                   </p>
@@ -141,13 +142,13 @@ function BuyerDetail({ buyerId }) {
                   {o.items.map((it, idx) => (
                     <li
                       key={idx}
-                      className="flex items-center justify-between text-xs text-slate-600"
+                      className="flex items-center justify-between text-xs text-body"
                     >
                       <span className="truncate">
                         {it.name} · {formatQuantity(it.quantity, it)}
                       </span>
                       <span className="shrink-0">
-                        PKR {(it.price * it.quantity).toFixed(2)}
+                        PKR {formatAmount(it.price * it.quantity)}
                       </span>
                     </li>
                   ))}
@@ -161,8 +162,8 @@ function BuyerDetail({ buyerId }) {
                   ) : (
                     <span />
                   )}
-                  <p className="text-xs font-semibold text-slate-900">
-                    Total: PKR {Number(o.total).toFixed(2)}
+                  <p className="text-xs font-semibold text-foreground">
+                    Total: PKR {formatAmount(o.total)}
                   </p>
                 </div>
               </li>
@@ -217,45 +218,45 @@ export function AdminBuyersPage() {
   );
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] bg-slate-50">
+    <div className="min-h-[calc(100vh-4rem)] bg-background">
       <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6 lg:px-8">
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-slate-900">Buyers</h1>
-          <p className="mt-1 text-sm text-slate-600">
+          <h1 className="text-2xl font-bold text-foreground">Buyers</h1>
+          <p className="mt-1 text-sm text-body">
             All registered buyers with their order history.
           </p>
         </div>
 
         <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="rounded-2xl border border-border bg-surface p-4 shadow-sm">
             <UserIcon className="mb-2 h-5 w-5 text-sky-500" />
-            <p className="text-2xl font-bold text-slate-900 leading-none">
+            <p className="text-2xl font-bold text-foreground leading-none">
               {totals.buyers}
             </p>
-            <p className="mt-1 text-xs font-medium text-slate-500">Buyers</p>
+            <p className="mt-1 text-xs font-medium text-muted">Buyers</p>
           </div>
-          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="rounded-2xl border border-border bg-surface p-4 shadow-sm">
             <ShoppingBag className="mb-2 h-5 w-5 text-amber-500" />
-            <p className="text-2xl font-bold text-slate-900 leading-none">
+            <p className="text-2xl font-bold text-foreground leading-none">
               {totals.orders}
             </p>
-            <p className="mt-1 text-xs font-medium text-slate-500">Orders</p>
+            <p className="mt-1 text-xs font-medium text-muted">Orders</p>
           </div>
-          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="rounded-2xl border border-border bg-surface p-4 shadow-sm">
             <Wallet className="mb-2 h-5 w-5 text-emerald-500" />
-            <p className="text-2xl font-bold text-slate-900 leading-none">
+            <p className="text-2xl font-bold text-foreground leading-none">
               PKR {Number(totals.spent).toFixed(0)}
             </p>
-            <p className="mt-1 text-xs font-medium text-slate-500">
+            <p className="mt-1 text-xs font-medium text-muted">
               Delivered spend
             </p>
           </div>
-          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="rounded-2xl border border-border bg-surface p-4 shadow-sm">
             <Clock className="mb-2 h-5 w-5 text-amber-500" />
-            <p className="text-2xl font-bold text-slate-900 leading-none">
+            <p className="text-2xl font-bold text-foreground leading-none">
               {totals.pending}
             </p>
-            <p className="mt-1 text-xs font-medium text-slate-500">
+            <p className="mt-1 text-xs font-medium text-muted">
               Pending payments
             </p>
           </div>
@@ -263,7 +264,7 @@ export function AdminBuyersPage() {
 
         <div className="relative mb-4">
           <Search
-            className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
+            className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted"
             aria-hidden
           />
           <input
@@ -271,21 +272,21 @@ export function AdminBuyersPage() {
             placeholder="Search buyers by name, email or phone…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full min-h-[44px] rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-4 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary touch-manipulation"
+            className="w-full min-h-[44px] rounded-xl border border-border bg-surface py-2.5 pl-10 pr-4 text-sm text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary touch-manipulation"
           />
         </div>
 
         {loading && buyers.length === 0 ? (
-          <div className="rounded-2xl border border-slate-200 bg-white p-12 text-center">
-            <p className="text-sm text-slate-500">Loading buyers…</p>
+          <div className="rounded-2xl border border-border bg-surface p-12 text-center">
+            <p className="text-sm text-muted">Loading buyers…</p>
           </div>
         ) : filtered.length === 0 ? (
-          <div className="rounded-2xl border border-slate-200 bg-white p-12 text-center">
+          <div className="rounded-2xl border border-border bg-surface p-12 text-center">
             <UserIcon
               className="mx-auto mb-3 h-10 w-10 text-slate-300"
               aria-hidden
             />
-            <p className="font-medium text-slate-700">
+            <p className="font-medium text-body">
               {buyers.length === 0
                 ? "No buyers yet"
                 : "No buyers match your search"}
@@ -298,19 +299,19 @@ export function AdminBuyersPage() {
               return (
                 <li
                   key={b.id}
-                  className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"
+                  className="overflow-hidden rounded-2xl border border-border bg-surface shadow-sm"
                 >
                   <button
                     type="button"
                     onClick={() => setExpandedId(isOpen ? null : b.id)}
-                    className="flex w-full items-start gap-4 p-5 text-left transition-colors hover:bg-slate-50"
+                    className="flex w-full items-start gap-4 p-5 text-left transition-colors hover:bg-background"
                   >
                     <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-sky-100 text-base font-bold text-sky-700">
                       {b.name?.[0]?.toUpperCase() ?? "B"}
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
-                        <h3 className="text-base font-semibold text-slate-900 truncate">
+                        <h3 className="text-base font-semibold text-foreground truncate">
                           {b.name}
                         </h3>
                         {b.isEmailVerified && (
@@ -323,7 +324,7 @@ export function AdminBuyersPage() {
                           </span>
                         )}
                       </div>
-                      <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500">
+                      <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted">
                         <span className="inline-flex items-center gap-1">
                           <Mail className="h-3 w-3" />
                           {b.email}
@@ -377,7 +378,7 @@ export function AdminBuyersPage() {
                         )}
                       </div>
                     </div>
-                    <div className="shrink-0 self-center text-slate-400">
+                    <div className="shrink-0 self-center text-muted">
                       {isOpen ? (
                         <ChevronUp className="h-5 w-5" />
                       ) : (

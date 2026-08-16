@@ -1,82 +1,56 @@
-import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
+import { Reveal } from "@/components/ui/Reveal";
 import { MERCHANT_STEPS } from "../constants";
 
+/**
+ * Merchant pitch. Two columns: the argument on the left, the mechanics as a
+ * ruled list on the right, no card grid, no repeated icon boxes.
+ */
 export function ForMerchantsSection() {
   return (
-    <section id="for-merchants" className="scroll-mt-20 relative overflow-hidden bg-white">
-      <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent" />
-      <div className="relative mx-auto max-w-5xl px-4 py-16 sm:px-6 sm:py-20 lg:px-8 lg:py-24">
-        <div className="text-center max-w-2xl mx-auto mb-12 sm:mb-14">
-          <motion.p
-            className="text-xs sm:text-sm font-semibold uppercase tracking-widest text-primary mb-3"
-            initial={{ opacity: 0, y: 12 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.4 }}
-          >
-            For businesses
-          </motion.p>
-          <motion.h2
-            className="text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl lg:text-4xl"
-            initial={{ opacity: 0, y: 16 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.4, delay: 0.05 }}
-          >
-            For merchants
-          </motion.h2>
-          <motion.p
-            className="mt-3 text-base text-slate-600 sm:text-lg"
-            initial={{ opacity: 0, y: 16 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.4, delay: 0.1 }}
-          >
-            Add inventory, set your price, and let customers lock in today&apos;s rate.
-          </motion.p>
-        </div>
-        <div className="space-y-4 sm:space-y-5">
-          {MERCHANT_STEPS.map((step, i) => (
-            <motion.div
-              key={step.title}
-              className="group flex gap-4 sm:gap-6 rounded-2xl sm:rounded-3xl border border-slate-200/90 bg-slate-50/70 p-5 sm:p-6 shadow-sm hover:shadow-md hover:border-slate-200 transition-all"
-              initial={{ opacity: 0, x: -16 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.45, delay: 0.08 * i }}
+    <section
+      id="for-merchants"
+      className="scroll-mt-16 border-t border-border bg-background"
+    >
+      <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-24 lg:px-8">
+        <div className="grid gap-12 lg:grid-cols-[0.9fr_1.1fr] lg:gap-20">
+          <Reveal>
+            <h2 className="text-[clamp(1.75rem,3.5vw,2.75rem)] font-extrabold tracking-[-0.03em] text-foreground">
+              Sell today. Hand over later.
+            </h2>
+            <p className="mt-4 text-lg leading-relaxed text-body">
+              Take payment up front, hold the stock, and hand it over when the customer
+              shows their code. Cash in hand now, no card terminal, no chargebacks.
+            </p>
+            <Link
+              to="/auth?type=merchant"
+              className="mt-8 inline-flex min-h-[52px] items-center justify-center rounded-2xl bg-primary px-7 text-base font-semibold text-primary-foreground shadow-[var(--shadow-brand)] transition-[background-color,transform] duration-[var(--dur-fast)] hover:bg-accent active:translate-y-px"
             >
-              <span className="flex h-10 w-10 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-full bg-primary text-sm sm:text-base font-semibold text-white shadow-lg shadow-primary/25">
-                {i + 1}
-              </span>
-              <div className="min-w-0">
-                <h3 className="font-semibold text-slate-900 text-base sm:text-lg">
-                  {step.title}
-                </h3>
-                <p className="mt-1 text-sm sm:text-base text-slate-600 leading-relaxed">
-                  {step.description}
-                </p>
-              </div>
-            </motion.div>
-          ))}
+              Open a merchant account
+            </Link>
+          </Reveal>
+
+          <ol className="divide-y divide-border border-y border-border">
+            {MERCHANT_STEPS.map((step, i) => (
+              <Reveal
+                as="li"
+                key={step.title}
+                delay={i * 0.06}
+                className="flex gap-5 py-6"
+              >
+                <span className="tnum shrink-0 pt-1 text-sm font-bold text-primary">
+                  {String(i + 1).padStart(2, "0")}
+                </span>
+                <div className="min-w-0">
+                  <h3 className="text-lg font-bold tracking-[-0.01em] text-foreground">
+                    {step.title}
+                  </h3>
+                  <p className="mt-1.5 leading-relaxed text-body">{step.description}</p>
+                </div>
+              </Reveal>
+            ))}
+          </ol>
         </div>
-        <motion.div
-          className="mt-10 sm:mt-12 flex justify-center"
-          initial={{ opacity: 0, y: 12 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.4, delay: 0.2 }}
-        >
-          <Link to="/auth" className="inline-block">
-            <motion.span
-              className="inline-flex min-h-[48px] sm:min-h-[52px] items-center justify-center rounded-2xl bg-primary px-6 sm:px-8 text-sm sm:text-base font-semibold text-white shadow-xl shadow-primary/25 hover:shadow-primary/35 hover:bg-orange-600 transition-all touch-manipulation"
-              whileHover={{ scale: 1.02, y: -1 }}
-              whileTap={{ scale: 0.98 }}
-            >
-              Sign up as merchant
-            </motion.span>
-          </Link>
-        </motion.div>
       </div>
     </section>
   );

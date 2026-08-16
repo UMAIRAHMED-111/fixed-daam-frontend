@@ -1,4 +1,4 @@
-// Seeded Picsum URLs — each seed always resolves to the same photo
+// Seeded Picsum URLs, each seed always resolves to the same photo
 export const SAMPLE_IMAGES = {
   Electronics: [
     "https://picsum.photos/seed/laptop-silver/400/300",

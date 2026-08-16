@@ -63,14 +63,14 @@ export function PickupHistory({
   );
 
   return (
-    <div className="border-t border-slate-100 bg-slate-50/40">
+    <div className="border-t border-border bg-slate-50/40">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
         className="flex w-full items-center justify-between gap-3 px-5 py-3 text-left hover:bg-slate-100/60 transition-colors"
         aria-expanded={open}
       >
-        <span className="inline-flex items-center gap-2 text-sm font-semibold text-slate-700">
+        <span className="inline-flex items-center gap-2 text-sm font-semibold text-body">
           <History className="h-4 w-4 text-primary" />
           Pickup history
           {hasEvents && (
@@ -79,14 +79,14 @@ export function PickupHistory({
             </span>
           )}
         </span>
-        <span className="inline-flex items-center gap-2 text-xs text-slate-500">
+        <span className="inline-flex items-center gap-2 text-xs text-muted">
           {!open && hasEvents && (
             <span>Last collected {relativeTime(sorted[0].at)}</span>
           )}
           {open ? (
-            <ChevronUp className="h-4 w-4 text-slate-400" />
+            <ChevronUp className="h-4 w-4 text-muted" />
           ) : (
-            <ChevronDown className="h-4 w-4 text-slate-400" />
+            <ChevronDown className="h-4 w-4 text-muted" />
           )}
         </span>
       </button>
@@ -94,12 +94,12 @@ export function PickupHistory({
       {open && (
         <div className="px-5 pb-4">
           {!hasEvents ? (
-            <p className="rounded-xl border border-dashed border-slate-200 bg-white px-4 py-6 text-center text-sm text-slate-500">
+            <p className="rounded-xl border border-dashed border-border bg-surface px-4 py-6 text-center text-sm text-muted">
               <Clock className="mx-auto mb-1 h-4 w-4 text-slate-300" />
               {emptyHint}
             </p>
           ) : (
-            <ol className="relative space-y-4 border-l-2 border-slate-200 pl-5">
+            <ol className="relative space-y-4 border-l-2 border-border pl-5">
               {sorted.map((evt, idx) => {
                 const showMerchant =
                   evt.merchantName &&
@@ -110,20 +110,20 @@ export function PickupHistory({
                     <span className="absolute -left-[27px] top-1 flex h-4 w-4 items-center justify-center rounded-full bg-emerald-500 ring-4 ring-slate-50">
                       <CheckCircle2 className="h-3 w-3 text-white" />
                     </span>
-                    <div className="rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+                    <div className="rounded-xl border border-border bg-surface px-4 py-3 shadow-sm">
                       <div className="flex flex-wrap items-baseline justify-between gap-2">
-                        <p className="text-sm font-semibold text-slate-800">
+                        <p className="text-sm font-semibold text-foreground">
                           {relativeTime(evt.at)}
                         </p>
                         <p
-                          className="text-[11px] text-slate-400"
+                          className="text-[11px] text-muted"
                           title={fullTimestamp(evt.at)}
                         >
                           {fullTimestamp(evt.at)}
                         </p>
                       </div>
                       {showMerchant && (
-                        <p className="mt-0.5 inline-flex items-center gap-1 text-xs text-slate-500">
+                        <p className="mt-0.5 inline-flex items-center gap-1 text-xs text-muted">
                           <Store className="h-3 w-3" />
                           {evt.merchantName}
                         </p>
@@ -134,7 +134,7 @@ export function PickupHistory({
                             key={i}
                             className="flex items-center justify-between gap-3 text-sm"
                           >
-                            <span className="truncate text-slate-700">
+                            <span className="truncate text-body">
                               {it.name}
                             </span>
                             <span className="shrink-0 rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-700">

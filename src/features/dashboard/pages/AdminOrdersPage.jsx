@@ -1,35 +1,25 @@
 import { useEffect, useState, useMemo } from "react";
-import { Search, Package, Clock, CheckCircle2, Truck, XCircle } from "lucide-react";
+import { Search, Package, Clock, XCircle } from "lucide-react";
 import { useAuthStore } from "@/stores/authStore";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { Skeleton } from "@/components/ui/Skeleton";
+import { Button } from "@/components/ui/Button";
+import { StatusBadge } from "@/components/ui/StatusBadge";
+import { INPUT_CLASS, PANEL_CLASS } from "@/lib/styles";
+import { formatAmount } from "@/lib/money";
 import { formatQuantity } from "../data/uomData";
 
 const STATUS_TABS = [
   { id: "all", label: "All" },
-  { id: "pending_verification", label: "Pending" },
-  { id: "locked", label: "New" },
+  { id: "pending_verification", label: "Needs review" },
+  { id: "locked", label: "Approved" },
   { id: "ready", label: "Ready" },
-  { id: "delivered", label: "Delivered" },
+  { id: "delivered", label: "Collected" },
   { id: "rejected", label: "Rejected" },
 ];
-
-const STATUS_CONFIG = {
-  pending_verification: { label: "Pending payment", className: "bg-amber-100 text-amber-700" },
-  locked: { label: "New order", className: "bg-blue-100 text-blue-800" },
-  ready: { label: "Ready for pickup", className: "bg-emerald-100 text-emerald-800" },
-  delivered: { label: "Delivered", className: "bg-slate-100 text-slate-600" },
-  rejected: { label: "Rejected", className: "bg-red-100 text-red-700" },
-};
-
-function StatusBadge({ status }) {
-  const { label, className } = STATUS_CONFIG[status] ?? STATUS_CONFIG.pending_verification;
-  return (
-    <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${className}`}>
-      {label}
-    </span>
-  );
-}
 
 export function AdminOrdersPage() {
   const user = useAuthStore((s) => s.user);
@@ -58,8 +48,6 @@ export function AdminOrdersPage() {
   useEffect(() => {
     fetchOrders();
   }, []);
-
-  if (user?.role !== "admin") return null;
 
   const counts = useMemo(
     () => ({
@@ -91,6 +79,17 @@ export function AdminOrdersPage() {
     return list;
   }, [orders, statusFilter, search]);
 
+  // Land the admin where the work is: the verification queue if anything is
+  // waiting, otherwise the full list rather than an empty tab.
+  const [hasPickedTab, setHasPickedTab] = useState(false);
+  useEffect(() => {
+    if (hasPickedTab || loading || orders.length === 0) return;
+    setStatusFilter(counts.pending_verification > 0 ? "pending_verification" : "all");
+    setHasPickedTab(true);
+  }, [hasPickedTab, loading, orders.length, counts.pending_verification]);
+
+  if (user?.role !== "admin") return null;
+
   const updateOrderInState = (updated) =>
     setOrders((prev) => prev.map((o) => (o.id === updated.id ? updated : o)));
 
@@ -99,7 +98,7 @@ export function AdminOrdersPage() {
     try {
       const res = await api.patch(`/v1/admin/orders/${orderId}/verify`, { action: "approve" });
       updateOrderInState(res.data);
-      toast.success("Payment approved — order is now active.");
+      toast.success("Payment approved, order is now active.");
     } catch (err) {
       toast.error(err.response?.data?.message || "Failed to approve order");
     } finally {
@@ -125,60 +124,70 @@ export function AdminOrdersPage() {
     }
   };
 
-  const STATS = [
-    { label: "Pending", value: counts.pending_verification, Icon: Clock, color: "text-amber-600", bg: "bg-amber-50" },
-    { label: "New", value: counts.locked, Icon: Package, color: "text-blue-600", bg: "bg-blue-50" },
-    { label: "Ready", value: counts.ready, Icon: Truck, color: "text-emerald-600", bg: "bg-emerald-50" },
-    { label: "Delivered", value: counts.delivered, Icon: CheckCircle2, color: "text-slate-500", bg: "bg-slate-100" },
+  const queueSummary = [
+    { label: "awaiting review", value: counts.pending_verification, tone: "warning" },
+    { label: "approved", value: counts.locked, tone: "info" },
+    { label: "ready", value: counts.ready, tone: "success" },
+    { label: "collected", value: counts.delivered, tone: "neutral" },
   ];
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] bg-slate-50">
-      <div className="mx-auto max-w-4xl px-4 py-6 sm:px-6 lg:px-8">
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold text-slate-900">Payment verification</h1>
-          <p className="mt-1 text-sm text-slate-600">
-            Review payment proofs and approve or reject orders.
-          </p>
-        </div>
+    <div className="min-h-[calc(100vh-4rem)] bg-background">
+      <div className="mx-auto max-w-4xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
+        <PageHeader
+          title="Payment verification"
+          description="Approve or reject the payment proof buyers upload at checkout. Approving locks their price and releases the order to the merchant."
+        />
 
-        {/* Stats */}
-        <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
-          {STATS.map(({ label, value, Icon, color, bg }) => (
-            <div key={label} className="flex flex-col rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-              <div className={`mb-2 inline-flex h-8 w-8 items-center justify-center rounded-xl ${bg}`}>
-                <Icon className={`h-4 w-4 ${color}`} aria-hidden />
-              </div>
-              <p className="text-2xl font-bold text-slate-900 leading-none">{value}</p>
-              <p className="mt-1 text-xs font-medium text-slate-500">{label}</p>
-            </div>
+        {/* Queue state as one line of counts, not four identical metric cards. */}
+        <div className="mb-4 flex flex-wrap items-center gap-x-5 gap-y-2 border-y border-border py-3">
+          {queueSummary.map(({ label, value, tone }) => (
+            <p key={label} className="flex items-baseline gap-1.5 text-sm">
+              <span
+                className={`tnum text-base font-bold ${
+                  value === 0
+                    ? "text-muted"
+                    : tone === "warning"
+                      ? "text-warning"
+                      : "text-foreground"
+                }`}
+              >
+                {value}
+              </span>
+              <span className="text-muted">{label}</span>
+            </p>
           ))}
         </div>
 
         {counts.pending_verification > 0 && (
-          <div className="mb-3 flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-            <span className="inline-block h-2 w-2 shrink-0 rounded-full bg-amber-500 animate-pulse" />
+          <div className="mb-4 flex items-center gap-3 rounded-xl bg-warning-soft px-4 py-3 text-sm text-warning ring-1 ring-inset ring-warning/20">
+            <Clock className="h-4 w-4 shrink-0" aria-hidden />
             <span>
-              <strong>{counts.pending_verification}</strong> order
-              {counts.pending_verification > 1 ? "s are" : " is"} awaiting payment verification.
+              <strong className="tnum">{counts.pending_verification}</strong> order
+              {counts.pending_verification > 1 ? "s are" : " is"} waiting on you, buyers
+              can&apos;t collect until their payment is approved.
             </span>
           </div>
         )}
 
         {/* Search */}
         <div className="relative mb-4">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" aria-hidden />
+          <Search
+            className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted"
+            aria-hidden
+          />
           <input
             type="search"
             placeholder="Search by buyer name, order ID, or product…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full min-h-[44px] rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-4 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary touch-manipulation"
+            className={`${INPUT_CLASS} pl-10`}
+            aria-label="Search orders"
           />
         </div>
 
         {/* Status tabs */}
-        <div className="mb-6 flex gap-1 overflow-x-auto rounded-xl bg-slate-100 p-1 scrollbar-none">
+        <div className="mb-6 flex gap-1 overflow-x-auto rounded-xl bg-surface-sunken p-1 scrollbar-none">
           {STATUS_TABS.map((tab) => (
             <button
               key={tab.id}
@@ -186,14 +195,14 @@ export function AdminOrdersPage() {
               onClick={() => setStatusFilter(tab.id)}
               className={`flex flex-1 min-w-max items-center justify-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-2 text-sm font-medium transition-all ${
                 statusFilter === tab.id
-                  ? "bg-white text-slate-900 shadow-sm"
-                  : "text-slate-500 hover:text-slate-700"
+                  ? "bg-surface text-foreground shadow-sm"
+                  : "text-muted hover:text-body"
               }`}
             >
               {tab.label}
               {counts[tab.id] > 0 && (
                 <span className={`rounded-full px-1.5 py-0.5 text-xs font-semibold leading-none ${
-                  statusFilter === tab.id ? "bg-primary text-white" : "bg-slate-200 text-slate-600"
+                  statusFilter === tab.id ? "bg-primary text-white" : "bg-slate-200 text-body"
                 }`}>
                   {counts[tab.id]}
                 </span>
@@ -204,16 +213,41 @@ export function AdminOrdersPage() {
 
         {/* Orders list */}
         {loading && orders.length === 0 ? (
-          <div className="rounded-2xl border border-slate-200 bg-white p-12 text-center">
-            <p className="text-slate-500 text-sm">Loading orders…</p>
+          <div className="space-y-4">
+            {[0, 1, 2].map((i) => (
+              <div key={i} className={`${PANEL_CLASS} p-5`}>
+                <Skeleton className="h-4 w-32" />
+                <Skeleton className="mt-4 h-3 w-48" />
+                <Skeleton className="mt-2 h-3 w-40" />
+                <Skeleton className="mt-4 h-9 w-full" />
+              </div>
+            ))}
           </div>
         ) : filtered.length === 0 ? (
-          <div className="rounded-2xl border border-slate-200 bg-white p-12 text-center">
-            <Package className="mx-auto mb-3 h-10 w-10 text-slate-300" aria-hidden />
-            <p className="font-medium text-slate-700">
-              {orders.length === 0 ? "No orders yet" : "No orders match your search"}
-            </p>
-          </div>
+          <EmptyState
+            icon={Package}
+            title={
+              orders.length === 0
+                ? "No orders yet"
+                : search
+                  ? `Nothing matches “${search}”`
+                  : `Nothing ${STATUS_TABS.find((t) => t.id === statusFilter)?.label.toLowerCase() ?? "here"}`
+            }
+            description={
+              orders.length === 0
+                ? "Orders appear here the moment a buyer checks out. You'll verify their payment proof before the merchant prepares anything."
+                : search
+                  ? "Try a buyer name, an order ID, or a product name."
+                  : "Nothing needs attention in this tab right now."
+            }
+            action={
+              statusFilter !== "all" && orders.length > 0 ? (
+                <Button variant="secondary" onClick={() => setStatusFilter("all")}>
+                  View all orders
+                </Button>
+              ) : null
+            }
+          />
         ) : (
           <ul className="space-y-4">
             {filtered.map((order) => {
@@ -224,16 +258,16 @@ export function AdminOrdersPage() {
               const showRejectForm = rejectingId === order.id;
 
               return (
-                <li key={order.id} className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+                <li key={order.id} className="overflow-hidden rounded-2xl border border-border bg-surface shadow-sm">
                   {/* Order header */}
-                  <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 bg-slate-50 px-5 py-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border bg-background px-5 py-3">
                     <div className="flex flex-wrap items-center gap-2">
-                      <StatusBadge status={order.status} />
-                      <span className="font-mono text-xs text-slate-400">
+                      <StatusBadge status={order.status} audience="admin" />
+                      <span className="font-mono text-xs text-muted">
                         #{order.id?.slice(-8).toUpperCase()}
                       </span>
                     </div>
-                    <span className="text-xs text-slate-500">
+                    <span className="text-xs text-muted">
                       {new Date(order.createdAt).toLocaleString(undefined, {
                         dateStyle: "medium",
                         timeStyle: "short",
@@ -251,10 +285,10 @@ export function AdminOrdersPage() {
                           </div>
                           <div className="min-w-0">
                             {order.buyerName && (
-                              <p className="text-sm font-semibold text-slate-800 truncate">{order.buyerName}</p>
+                              <p className="text-sm font-semibold text-foreground truncate">{order.buyerName}</p>
                             )}
                             {order.buyerEmail && (
-                              <p className="text-xs text-slate-500 truncate">{order.buyerEmail}</p>
+                              <p className="text-xs text-muted truncate">{order.buyerEmail}</p>
                             )}
                           </div>
                         </div>
@@ -263,19 +297,19 @@ export function AdminOrdersPage() {
                       <ul className="space-y-1.5">
                         {order.items?.map((item, i) => (
                           <li key={i} className="flex items-center justify-between gap-4 text-sm">
-                            <span className="text-slate-700 truncate">
+                            <span className="text-body truncate">
                               {item.name}{" "}
-                              <span className="text-slate-400">· {formatQuantity(item.quantity, item)}</span>
+                              <span className="text-muted">· {formatQuantity(item.quantity, item)}</span>
                             </span>
-                            <span className="shrink-0 text-slate-500">
-                              PKR {(item.price * item.quantity).toFixed(2)}
+                            <span className="shrink-0 text-muted">
+                              PKR {formatAmount(item.price * item.quantity)}
                             </span>
                           </li>
                         ))}
                       </ul>
 
-                      <p className="mt-3 text-sm font-semibold text-slate-900">
-                        Total: PKR {Number(order.total).toFixed(2)}
+                      <p className="mt-3 text-sm font-semibold text-foreground">
+                        Total: PKR {formatAmount(order.total)}
                       </p>
 
                       {isRejected && order.rejectionNote && (
@@ -289,13 +323,13 @@ export function AdminOrdersPage() {
                     <div className="flex shrink-0 flex-col items-center gap-3">
                       {isPending && order.paymentProof && (
                         <div>
-                          <p className="mb-1.5 text-center text-xs font-medium text-slate-500">
+                          <p className="mb-1.5 text-center text-xs font-medium text-muted">
                             Payment proof
                           </p>
                           <button
                             type="button"
                             onClick={() => setLightboxSrc(order.paymentProof)}
-                            className="block overflow-hidden rounded-xl border border-slate-200 hover:border-primary transition-colors"
+                            className="block overflow-hidden rounded-xl border border-border hover:border-primary transition-colors"
                             title="Click to enlarge"
                           >
                             <img
@@ -318,7 +352,7 @@ export function AdminOrdersPage() {
 
                   {/* Approve / Reject actions */}
                   {isPending && (
-                    <div className="border-t border-slate-100 px-5 py-4">
+                    <div className="border-t border-border px-5 py-4">
                       {showRejectForm ? (
                         <div className="space-y-3">
                           <textarea
@@ -326,7 +360,7 @@ export function AdminOrdersPage() {
                             placeholder="Rejection reason (optional)…"
                             value={rejectionNote}
                             onChange={(e) => setRejectionNote(e.target.value)}
-                            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-red-400 resize-none"
+                            className="w-full rounded-xl border border-border px-3 py-2 text-sm text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-red-400 resize-none"
                           />
                           <div className="flex gap-2">
                             <button
@@ -340,7 +374,7 @@ export function AdminOrdersPage() {
                             <button
                               type="button"
                               onClick={() => { setRejectingId(null); setRejectionNote(""); }}
-                              className="min-h-[44px] rounded-2xl border border-slate-200 px-4 text-sm font-medium text-slate-600 hover:bg-slate-50 transition-all"
+                              className="min-h-[44px] rounded-2xl border border-border px-4 text-sm font-medium text-body hover:bg-background transition-all"
                             >
                               Cancel
                             </button>
@@ -352,7 +386,7 @@ export function AdminOrdersPage() {
                             type="button"
                             onClick={() => handleApprove(order.id)}
                             disabled={isApproving}
-                            className="min-h-[44px] flex-1 rounded-2xl bg-primary px-4 text-sm font-semibold text-white shadow-lg shadow-primary/25 hover:bg-orange-600 transition-all touch-manipulation disabled:opacity-60"
+                            className="min-h-[44px] flex-1 rounded-2xl bg-primary px-4 text-sm font-semibold text-white shadow-lg shadow-primary/25 hover:bg-accent transition-all touch-manipulation disabled:opacity-60"
                           >
                             {isApproving ? "Approving…" : "Approve payment"}
                           </button>

@@ -32,7 +32,7 @@ export function ProductImage({
 
   const handleError = () => {
     if (uploaded && src === uploaded) {
-      // Uploaded image broke — try the category stock image next.
+      // Uploaded image broke, try the category stock image next.
       const stock = pickStockImage(product);
       if (stock && stock !== src) {
         setSrc(stock);

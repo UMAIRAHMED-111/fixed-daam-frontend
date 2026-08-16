@@ -2,7 +2,7 @@ import { create } from "zustand";
 import { api } from "@/lib/api";
 
 /**
- * Inventory store — backed by /v1/products API.
+ * Inventory store, backed by /v1/products API.
  * Product shape: { id, merchantId, merchantName, name, description, price, category, stock, images[], isActive, createdAt }
  */
 export const useInventoryStore = create((set, get) => ({

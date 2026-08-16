@@ -1,37 +1,163 @@
 @import "tailwindcss";
 
+/*
+  FixedDaam design tokens.
+
+  Identity: orange on cool near-neutral. The brand already shipped #ea580c, so the
+  accent is preserved and everything else is built around it in OKLCH.
+
+  Neutrals stay cool (hue ~255) rather than warm — prices, receipts and stock counts
+  are the content, and a warm-tinted paper background would fight the orange.
+*/
 @theme {
-  /* FixedDaam: white primary, dark text, stylish orange accent */
-  --color-background: #ffffff;
-  --color-foreground: #0f172a;
-  --color-muted: #64748b;
-  --color-muted-foreground: #64748b;
-  --color-primary: #ea580c;
-  --color-primary-foreground: #ffffff;
-  --color-secondary: #f8fafc;
-  --color-secondary-foreground: #0f172a;
-  --color-accent: #c2410c;
-  --color-accent-foreground: #ffffff;
-  --color-border: #e2e8f0;
-  --color-input: #e2e8f0;
-  --color-ring: #ea580c;
-  --color-card: #ffffff;
-  --color-card-foreground: #0f172a;
-  --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  /* ── Surfaces ─────────────────────────────────────────────── */
+  --color-background: oklch(0.978 0.003 255); /* page */
+  --color-surface: oklch(1 0 0); /* cards, panels */
+  --color-surface-sunken: oklch(0.968 0.004 255); /* wells, inset rows */
+  --color-card: oklch(1 0 0);
+  --color-secondary: oklch(0.978 0.003 255);
+
+  /* ── Ink ──────────────────────────────────────────────────── */
+  --color-foreground: oklch(0.279 0.03 256); /* slate-900 — headings, data */
+  --color-body: oklch(0.446 0.026 256); /* slate-600 — body copy, 7.4:1 on white */
+  /* Darker than slate-500: at 0.554 it cleared 4.5:1 on the page bg by a hair,
+     and small labels shouldn't sit on the edge of the threshold. */
+  --color-muted: oklch(0.53 0.025 256);
+  --color-muted-foreground: oklch(0.53 0.025 256);
+  --color-card-foreground: oklch(0.279 0.03 256);
+  --color-secondary-foreground: oklch(0.279 0.03 256);
+
+  /* ── Brand ────────────────────────────────────────────────── */
+  --color-primary: oklch(0.646 0.19 42); /* #ea580c */
+  --color-primary-foreground: oklch(1 0 0);
+  --color-primary-soft: oklch(0.96 0.024 60); /* tinted wash for selected states */
+  --color-primary-ink: oklch(0.505 0.16 40); /* orange text that passes on white */
+  --color-accent: oklch(0.565 0.168 40);
+  --color-accent-foreground: oklch(1 0 0);
+
+  /* ── Lines & controls ─────────────────────────────────────── */
+  --color-border: oklch(0.923 0.008 255);
+  --color-border-strong: oklch(0.869 0.011 255);
+  --color-input: oklch(0.897 0.01 255);
+  --color-ring: oklch(0.646 0.19 42);
+
+  /* ── Semantic states ──────────────────────────────────────── */
+  --color-success: oklch(0.596 0.13 163);
+  --color-success-soft: oklch(0.955 0.035 165);
+  --color-warning: oklch(0.646 0.15 70);
+  --color-warning-soft: oklch(0.963 0.045 85);
+  --color-danger: oklch(0.585 0.208 27);
+  --color-danger-soft: oklch(0.955 0.03 25);
+  --color-info: oklch(0.588 0.158 254);
+  --color-info-soft: oklch(0.955 0.025 250);
+
+  /* ── Type ─────────────────────────────────────────────────── */
+  --font-sans: Archivo, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+
+  /* Product-register scale: fixed rem, ~1.15 ratio. Landing uses clamp() locally. */
+  --text-2xs: 0.6875rem;
+  --text-2xs--line-height: 1rem;
+
+  /* ── Motion ───────────────────────────────────────────────── */
+  --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* ── Elevation ────────────────────────────────────────────── */
+  --shadow-e1: 0 1px 2px oklch(0.279 0.03 256 / 0.06);
+  --shadow-e2: 0 1px 3px oklch(0.279 0.03 256 / 0.08), 0 4px 12px oklch(0.279 0.03 256 / 0.05);
+  --shadow-e3: 0 8px 28px oklch(0.279 0.03 256 / 0.1);
+  --shadow-brand: 0 8px 24px oklch(0.646 0.19 42 / 0.24);
+}
+
+/* Semantic stacking order — never arbitrary 999s. */
+:root {
+  --z-dropdown: 10;
+  --z-sticky: 20;
+  --z-backdrop: 30;
+  --z-modal: 40;
+  --z-toast: 50;
+  --z-tooltip: 60;
+
+  --dur-fast: 140ms;
+  --dur: 200ms;
+  --dur-slow: 320ms;
 }
 
 @layer base {
   html {
     @apply antialiased;
     -webkit-tap-highlight-color: transparent;
+    scroll-behavior: smooth;
   }
+
   body {
-    @apply bg-background text-foreground min-h-screen;
+    @apply bg-background text-body min-h-screen;
     padding-left: env(safe-area-inset-left);
     padding-right: env(safe-area-inset-right);
+    /* Slightly narrower default figures read better in dense price tables. */
+    font-variant-numeric: tabular-nums;
   }
-  /* Mobile-first: comfortable tap targets */
-  button, a, [role="button"], select, input[type="submit"], input[type="button"] {
+
+  h1,
+  h2,
+  h3 {
+    @apply text-foreground;
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  /* Every interactive element gets a visible focus ring, not just the styled ones. */
+  :focus-visible {
+    outline: 2px solid var(--color-ring);
+    outline-offset: 2px;
+    border-radius: 0.375rem;
+  }
+
+  button,
+  a,
+  [role="button"],
+  select,
+  input[type="submit"],
+  input[type="button"] {
     touch-action: manipulation;
+  }
+
+  /* Placeholders must clear 4.5:1 like any other text. */
+  ::placeholder {
+    color: var(--color-muted);
+    opacity: 1;
+  }
+}
+
+@layer utilities {
+  /* Money and counts: fixed-width figures so columns line up and totals don't jitter. */
+  .tnum {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum" 1;
+  }
+
+  /* Display type for the landing surface only. */
+  .text-display {
+    font-weight: 800;
+    letter-spacing: -0.035em;
+    line-height: 1.02;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }

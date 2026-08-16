@@ -9,10 +9,15 @@ import {
   getRemainingDeliverable,
 } from "@/features/dashboard/data/uomData";
 import { PickupHistory } from "./PickupHistory";
+import { formatAmount } from "@/lib/money";
 
-const TOTP_WINDOW = 120; // seconds — keep in sync with backend STEP_SECONDS
+const TOTP_WINDOW = 120; // seconds, keep in sync with backend STEP_SECONDS
 
-function PickupCode({ orderId }) {
+/**
+ * Rotating pickup code. Guests fetch it through a token scoped to their order,
+ * so the endpoint is a prop rather than hardcoded to the signed-in route.
+ */
+export function PickupCode({ orderId, codeUrl }) {
   const [code, setCode] = useState(null);
   const [secondsLeft, setSecondsLeft] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -24,7 +29,7 @@ function PickupCode({ orderId }) {
     try {
       setLoading(true);
       setError(false);
-      const res = await api.get(`/v1/orders/${orderId}/pickup-code`);
+      const res = await api.get(codeUrl ?? `/v1/orders/${orderId}/pickup-code`);
       if (cancelledRef.current) return;
       setCode(res.data.code);
       setSecondsLeft(Math.max(1, Number(res.data.expiresIn) || TOTP_WINDOW));
@@ -69,8 +74,8 @@ function PickupCode({ orderId }) {
   const timeLabel = secondsLeft >= 60 ? `${mm}:${ss}` : `${secondsLeft}s`;
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white px-8 py-5 shadow-sm text-center">
-      <p className="mb-1 text-xs font-medium text-slate-500 uppercase tracking-wide">
+    <div className="rounded-xl border border-border bg-surface px-8 py-5 shadow-sm text-center">
+      <p className="mb-1 text-xs font-medium text-muted uppercase tracking-wide">
         Pickup Code
       </p>
 
@@ -94,14 +99,14 @@ function PickupCode({ orderId }) {
         <>
           <p
             className={`text-4xl font-bold tracking-[0.25em] font-mono transition-colors ${
-              isExpiring ? "text-red-600" : "text-slate-900"
+              isExpiring ? "text-red-600" : "text-foreground"
             }`}
             aria-live="polite"
           >
             {code}
           </p>
 
-          <div className="mx-auto mt-3 h-1.5 w-full max-w-[180px] overflow-hidden rounded-full bg-slate-100">
+          <div className="mx-auto mt-3 h-1.5 w-full max-w-[180px] overflow-hidden rounded-full bg-surface-sunken">
             <div
               className={`h-full transition-[width] duration-1000 ease-linear ${
                 isExpiring ? "bg-red-500" : "bg-primary"
@@ -112,13 +117,13 @@ function PickupCode({ orderId }) {
 
           <p
             className={`mt-2 text-xs font-medium ${
-              isExpiring ? "text-red-600" : "text-slate-500"
+              isExpiring ? "text-red-600" : "text-muted"
             }`}
           >
             Expires in {timeLabel}
           </p>
 
-          <p className="mt-2 text-xs text-slate-400">
+          <p className="mt-2 text-xs text-muted">
             Show this code to the merchant at pickup
           </p>
         </>
@@ -153,7 +158,7 @@ export function OrderCard({ order }) {
     pending_verification: { label: "Pending verification", className: "bg-amber-100 text-amber-700" },
     locked: { label: "Preparing", className: "bg-blue-100 text-blue-800" },
     ready: { label: "Ready for pickup", className: "bg-emerald-100 text-emerald-800" },
-    delivered: { label: "Delivered", className: "bg-slate-100 text-slate-600" },
+    delivered: { label: "Delivered", className: "bg-surface-sunken text-body" },
     rejected: { label: "Rejected", className: "bg-red-100 text-red-700" },
   };
   const { label, className: badgeClass } =
@@ -170,19 +175,19 @@ export function OrderCard({ order }) {
   );
 
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+    <div className="rounded-2xl border border-border bg-surface shadow-sm overflow-hidden">
       {/* Header row */}
-      <div className="flex flex-wrap items-center justify-between gap-2 px-5 py-3 bg-slate-50 border-b border-slate-100">
+      <div className="flex flex-wrap items-center justify-between gap-2 px-5 py-3 bg-background border-b border-border">
         <div className="flex items-center gap-2 flex-wrap">
           <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${badgeClass}`}>
             {label}
           </span>
-          <span className="text-xs text-slate-400">
+          <span className="text-xs text-muted">
             {new Date(order.createdAt).toLocaleDateString(undefined, { dateStyle: "medium" })}
           </span>
         </div>
-        <span className="text-sm font-semibold text-slate-900">
-          PKR {Number(order.total).toFixed(2)}
+        <span className="text-sm font-semibold text-foreground">
+          PKR {formatAmount(order.total)}
         </span>
       </div>
 
@@ -192,7 +197,7 @@ export function OrderCard({ order }) {
           <div key={group.name} className="px-5 py-4">
             <div className="flex items-center gap-2 mb-3">
               <Store className="h-3.5 w-3.5 text-primary shrink-0" />
-              <span className="text-xs font-semibold text-slate-700 uppercase tracking-wide">
+              <span className="text-xs font-semibold text-body uppercase tracking-wide">
                 {group.name}
               </span>
             </div>
@@ -208,12 +213,12 @@ export function OrderCard({ order }) {
                 return (
                   <li key={i} className="flex flex-col gap-0.5 text-sm">
                     <div className="flex items-center justify-between gap-4">
-                      <span className="text-slate-700 truncate">
+                      <span className="text-body truncate">
                         {item.name}
-                        <span className="text-slate-400"> · {formatQuantity(item.quantity, item)}</span>
+                        <span className="text-muted"> · {formatQuantity(item.quantity, item)}</span>
                       </span>
-                      <span className="text-slate-500 shrink-0">
-                        PKR {(item.price * item.quantity).toFixed(2)}
+                      <span className="text-muted shrink-0">
+                        PKR {formatAmount(item.price * item.quantity)}
                       </span>
                     </div>
                     {isBundle && item.bundleSize && innerUom && (
@@ -224,7 +229,7 @@ export function OrderCard({ order }) {
                     )}
                     {showProgress && (
                       <div className="mt-1 flex items-center gap-2">
-                        <div className="h-1 flex-1 overflow-hidden rounded-full bg-slate-100">
+                        <div className="h-1 flex-1 overflow-hidden rounded-full bg-surface-sunken">
                           <div
                             className="h-full bg-emerald-500 transition-[width] duration-300"
                             style={{ width: `${Math.min(100, (delivered / total) * 100)}%` }}
@@ -232,7 +237,7 @@ export function OrderCard({ order }) {
                         </div>
                         <span
                           className={`text-[11px] font-medium ${
-                            fullyCollected ? "text-emerald-700" : "text-slate-500"
+                            fullyCollected ? "text-emerald-700" : "text-muted"
                           }`}
                         >
                           {formatDeliverableQty(delivered, item)} / {formatDeliverableQty(total, item)}
@@ -248,7 +253,7 @@ export function OrderCard({ order }) {
       </div>
 
       {/* QR + action footer */}
-      <div className="border-t border-slate-100 px-5 py-4">
+      <div className="border-t border-border px-5 py-4">
         {isPending && (
           <p className="text-xs text-amber-700 bg-amber-50 rounded-lg px-3 py-2">
             Payment proof submitted. Verification takes 2–3 hours. Your price is locked in.
@@ -294,7 +299,7 @@ export function OrderCard({ order }) {
             )}
 
             {isLocked && (
-              <p className="ml-auto text-xs text-slate-500">
+              <p className="ml-auto text-xs text-muted">
                 Store is preparing your order
               </p>
             )}
@@ -309,9 +314,9 @@ export function OrderCard({ order }) {
         )}
 
         {isReady && (
-          <p className="mt-3 text-xs text-slate-500">
+          <p className="mt-3 text-xs text-muted">
             Show the rotating pickup code to the merchant. They can dispense
-            partial quantities — the order stays open until everything is collected.
+            partial quantities, the order stays open until everything is collected.
           </p>
         )}
 
@@ -325,7 +330,7 @@ export function OrderCard({ order }) {
       {(isReady || isDelivered) && (
         <PickupHistory
           history={order.pickupHistory}
-          emptyHint="Nothing collected yet — show your code at the store."
+          emptyHint="Nothing collected yet, show your code at the store."
           defaultOpen={isReady && (order.pickupHistory?.length ?? 0) > 0}
         />
       )}

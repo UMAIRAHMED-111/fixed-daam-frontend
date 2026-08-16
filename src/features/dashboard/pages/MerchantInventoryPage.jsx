@@ -1,10 +1,53 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Plus, Pencil, Trash2 } from "lucide-react";
+import { Plus, Pencil, Trash2, PackageSearch, AlertTriangle } from "lucide-react";
+import { toast } from "sonner";
 import { useAuthStore } from "@/stores/authStore";
 import { useInventoryStore } from "@/stores/inventoryStore";
-import { toast } from "sonner";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { SkeletonRows } from "@/components/ui/Skeleton";
+import { Badge } from "@/components/ui/StatusBadge";
+import { PANEL_CLASS } from "@/lib/styles";
+import { formatAmount } from "@/lib/money";
 import { ProductImage } from "../components/ProductImage";
+import { SearchBar } from "../components/SearchBar";
+import { formatUomSuffix } from "../data/uomData";
+
+/** Stock below this many units gets flagged so the merchant can restock in time. */
+const LOW_STOCK = 10;
+
+/** Stock cell: available count, reserved hold, and a low-stock flag. */
+function StockCell({ product }) {
+  const stock = Number(product.stock ?? 0);
+  const reserved = Number(product.reserved ?? 0);
+
+  return (
+    <div className="flex flex-col items-start gap-1 sm:items-end">
+      <p className="tnum text-sm font-semibold text-foreground">
+        {stock.toLocaleString()}
+        <span className="ml-1 text-xs font-normal text-muted">available</span>
+      </p>
+      {reserved > 0 && (
+        <Badge tone="warning" size="sm">
+          {reserved} reserved
+        </Badge>
+      )}
+      {stock <= 0 ? (
+        <Badge tone="danger" size="sm">
+          Out of stock
+        </Badge>
+      ) : (
+        stock <= LOW_STOCK && (
+          <Badge tone="warning" size="sm">
+            <AlertTriangle className="h-3 w-3" aria-hidden />
+            Low
+          </Badge>
+        )
+      )}
+    </div>
+  );
+}
 
 export function MerchantInventoryPage() {
   const user = useAuthStore((s) => s.user);
@@ -12,8 +55,10 @@ export function MerchantInventoryPage() {
   const merchantId = user?.id;
   const fetchMerchantProducts = useInventoryStore((s) => s.fetchMerchantProducts);
   const products = useInventoryStore((s) => s.getByMerchant(merchantId));
+  const loading = useInventoryStore((s) => s.loading);
   const removeProduct = useInventoryStore((s) => s.removeProduct);
   const [deletingId, setDeletingId] = useState(null);
+  const [search, setSearch] = useState("");
 
   useEffect(() => {
     if (merchantId) {
@@ -26,6 +71,25 @@ export function MerchantInventoryPage() {
       navigate("/dashboard", { replace: true });
     }
   }, [user?.role, navigate]);
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return products;
+    return products.filter((p) =>
+      [p.name, p.category, p.description]
+        .filter(Boolean)
+        .some((field) => field.toLowerCase().includes(q))
+    );
+  }, [products, search]);
+
+  const totals = useMemo(
+    () => ({
+      items: products.length,
+      units: products.reduce((sum, p) => sum + Number(p.stock ?? 0), 0),
+      reserved: products.reduce((sum, p) => sum + Number(p.reserved ?? 0), 0),
+    }),
+    [products]
+  );
 
   if (user?.role !== "merchant") {
     return null;
@@ -44,90 +108,133 @@ export function MerchantInventoryPage() {
     }
   };
 
-  return (
-    <div className="min-h-[calc(100vh-4rem)] bg-slate-50">
-      <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6 lg:px-8">
-        <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900">Inventory</h1>
-            {user?.storeName && (
-              <p className="mt-1 text-sm text-slate-600">Store: {user.storeName}</p>
-            )}
-          </div>
-          <Link
-            to="/dashboard/inventory/new"
-            className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-2xl bg-primary px-5 font-semibold text-white shadow-lg shadow-primary/25 hover:shadow-primary/35 hover:bg-orange-600 transition-all touch-manipulation"
-          >
-            <Plus className="h-5 w-5" aria-hidden />
-            Add product
-          </Link>
-        </div>
+  const addButton = (
+    <Link
+      to="/dashboard/inventory/new"
+      className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-semibold text-primary-foreground shadow-[var(--shadow-brand)] transition-[background-color,transform] duration-[var(--dur-fast)] hover:bg-accent active:translate-y-px"
+    >
+      <Plus className="h-4 w-4" aria-hidden />
+      Add product
+    </Link>
+  );
 
-        {products.length === 0 ? (
-          <div className="rounded-2xl border border-slate-200 bg-white p-12 text-center">
-            <p className="text-slate-600">You have no products yet.</p>
-            <p className="mt-1 text-sm text-slate-500">Add your first product to start selling.</p>
-            <Link
-              to="/dashboard/inventory/new"
-              className="mt-6 inline-flex min-h-[48px] items-center justify-center gap-2 rounded-2xl bg-primary px-6 font-semibold text-white shadow-lg shadow-primary/25 hover:shadow-primary/35 transition-all"
-            >
-              <Plus className="h-5 w-5" />
-              Add product
-            </Link>
+  return (
+    <div className="min-h-[calc(100vh-4rem)] bg-background">
+      <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
+        <PageHeader
+          title="Inventory"
+          description={
+            totals.items > 0
+              ? `${totals.items} ${totals.items === 1 ? "product" : "products"} · ${totals.units.toLocaleString()} units available${
+                  totals.reserved > 0 ? ` · ${totals.reserved} reserved for locked orders` : ""
+                }`
+              : user?.storeName
+                ? `Store: ${user.storeName}`
+                : undefined
+          }
+          actions={addButton}
+        />
+
+        {products.length > 3 && (
+          <div className="mb-4 max-w-sm">
+            <SearchBar
+              value={search}
+              onChange={setSearch}
+              placeholder="Search your products…"
+            />
           </div>
+        )}
+
+        {loading && products.length === 0 ? (
+          <div className={`${PANEL_CLASS} divide-y divide-border overflow-hidden`}>
+            <SkeletonRows count={5} />
+          </div>
+        ) : products.length === 0 ? (
+          <EmptyState
+            icon={PackageSearch}
+            title="No products yet"
+            description="Add what you sell, set today's price, and buyers can lock it in. You keep the stock until they collect."
+            action={addButton}
+          />
+        ) : filtered.length === 0 ? (
+          <EmptyState
+            icon={PackageSearch}
+            title={`Nothing matches “${search}”`}
+            description="Try a different product name or category."
+          />
         ) : (
-          <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {products.map((p) => (
-              <li
-                key={p.id}
-                className="flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"
-              >
-                <div className="aspect-square w-full overflow-hidden bg-slate-100">
-                  <ProductImage
-                    product={p}
-                    alt=""
-                    className="h-full w-full object-cover"
-                  />
-                </div>
-                <div className="flex flex-1 flex-col p-4">
-                  <span className="text-xs font-medium text-primary">{p.category}</span>
-                  <h3 className="mt-1 font-semibold text-slate-900 line-clamp-2">{p.name}</h3>
-                  <p className="mt-1 text-sm text-slate-600 line-clamp-2">{p.description || "—"}</p>
-                  <p className="mt-auto pt-3 text-lg font-bold text-slate-900">
-                    PKR {Number(p.price).toFixed(2)}
-                  </p>
-                  {Number(p.reserved) > 0 ? (
-                    <p className="text-sm">
-                      <span className="text-slate-500">Available:</span>{" "}
-                      <span className="font-semibold text-slate-800">{p.stock}</span>
-                      <span className="ml-2 inline-flex items-center rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-700">
-                        {p.reserved} reserved
+          <div className={`${PANEL_CLASS} overflow-hidden`}>
+            {/* Column headers, desktop only; the rows stay readable stacked on mobile. */}
+            <div className="hidden grid-cols-[minmax(0,1fr)_9rem_9rem_7rem] gap-4 border-b border-border bg-surface-sunken px-4 py-2.5 text-2xs font-semibold uppercase tracking-wide text-muted sm:grid">
+              <span>Product</span>
+              <span className="text-right">Price</span>
+              <span className="text-right">Stock</span>
+              <span className="text-right">Actions</span>
+            </div>
+
+            <ul className="divide-y divide-border">
+              {filtered.map((p) => {
+                const suffix = formatUomSuffix(p).replace(/^\//, "");
+                return (
+                  <li
+                    key={p.id}
+                    className="grid grid-cols-1 gap-3 px-4 py-3 transition-colors duration-[var(--dur-fast)] hover:bg-surface-sunken sm:grid-cols-[minmax(0,1fr)_9rem_9rem_7rem] sm:items-center sm:gap-4"
+                  >
+                    <div className="flex min-w-0 items-center gap-3">
+                      <div className="h-11 w-11 shrink-0 overflow-hidden rounded-lg border border-border bg-surface-sunken">
+                        <ProductImage
+                          product={p}
+                          alt=""
+                          className="h-full w-full object-cover"
+                          emojiSize="text-lg"
+                        />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-semibold text-foreground">
+                          {p.name}
+                        </p>
+                        <p className="truncate text-xs text-muted">
+                          {p.category}
+                          {suffix && ` · per ${suffix}`}
+                          {p.isActive === false && " · hidden from buyers"}
+                        </p>
+                      </div>
+                    </div>
+
+                    <p className="tnum text-sm font-semibold text-foreground sm:text-right">
+                      <span className="mr-1 text-xs font-normal text-muted sm:hidden">
+                        Price
                       </span>
+                      PKR {formatAmount(p.price)}
                     </p>
-                  ) : (
-                    <p className="text-sm text-slate-500">Stock: {p.stock}</p>
-                  )}
-                  <div className="mt-3 flex gap-2">
-                    <Link
-                      to={`/dashboard/inventory/${p.id}/edit`}
-                      className="flex min-h-[44px] flex-1 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 hover:bg-slate-50 touch-manipulation"
-                    >
-                      <Pencil className="h-4 w-4" />
-                      Edit
-                    </Link>
-                    <button
-                      type="button"
-                      onClick={() => handleDelete(p.id, p.name)}
-                      disabled={deletingId === p.id}
-                      className="flex min-h-[44px] items-center justify-center rounded-xl border border-red-200 bg-white px-3 text-sm font-medium text-red-600 hover:bg-red-50 touch-manipulation disabled:opacity-50"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </div>
-                </div>
-              </li>
-            ))}
-          </ul>
+
+                    <div className="sm:justify-self-end">
+                      <StockCell product={p} />
+                    </div>
+
+                    <div className="flex items-center gap-1 sm:justify-end">
+                      <Link
+                        to={`/dashboard/inventory/${p.id}/edit`}
+                        className="inline-flex min-h-[40px] items-center gap-1.5 rounded-lg px-2.5 text-sm font-medium text-body transition-colors duration-[var(--dur-fast)] hover:bg-surface hover:text-foreground"
+                      >
+                        <Pencil className="h-4 w-4" aria-hidden />
+                        <span className="sm:sr-only lg:not-sr-only">Edit</span>
+                      </Link>
+                      <button
+                        type="button"
+                        onClick={() => handleDelete(p.id, p.name)}
+                        disabled={deletingId === p.id}
+                        className="inline-flex min-h-[40px] w-10 items-center justify-center rounded-lg text-muted transition-colors duration-[var(--dur-fast)] hover:bg-danger-soft hover:text-danger disabled:opacity-50"
+                        aria-label={`Remove ${p.name}`}
+                      >
+                        <Trash2 className="h-4 w-4" aria-hidden />
+                      </button>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
         )}
       </div>
     </div>

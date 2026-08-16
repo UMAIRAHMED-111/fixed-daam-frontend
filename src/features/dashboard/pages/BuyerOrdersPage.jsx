@@ -58,13 +58,13 @@ export function BuyerOrdersPage() {
   }, [orders, statusFilter, search]);
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] bg-slate-50">
+    <div className="min-h-[calc(100vh-4rem)] bg-background">
       <div className="mx-auto max-w-3xl px-4 py-6 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-slate-900">My Orders</h1>
-          <p className="mt-1 text-sm text-slate-600">
-            Your locked-in prices. Show the rotating pickup code at the store —
+          <h1 className="text-2xl font-bold text-foreground">My Orders</h1>
+          <p className="mt-1 text-sm text-body">
+            Your locked-in prices. Show the rotating pickup code at the store -
             you can collect partial quantities across multiple visits.
           </p>
         </div>
@@ -72,7 +72,7 @@ export function BuyerOrdersPage() {
         {/* Search */}
         <div className="relative mb-4">
           <Search
-            className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
+            className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted"
             aria-hidden
           />
           <input
@@ -80,12 +80,12 @@ export function BuyerOrdersPage() {
             placeholder="Search by product, merchant, or order ID…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full min-h-[44px] rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-4 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary touch-manipulation"
+            className="w-full min-h-[44px] rounded-xl border border-border bg-surface py-2.5 pl-10 pr-4 text-sm text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary touch-manipulation"
           />
         </div>
 
         {/* Status tabs */}
-        <div className="mb-6 flex gap-1 overflow-x-auto rounded-xl bg-slate-100 p-1 scrollbar-none">
+        <div className="mb-6 flex gap-1 overflow-x-auto rounded-xl bg-surface-sunken p-1 scrollbar-none">
           {STATUS_TABS.map((tab) => (
             <button
               key={tab.id}
@@ -93,8 +93,8 @@ export function BuyerOrdersPage() {
               onClick={() => setStatusFilter(tab.id)}
               className={`flex flex-1 min-w-max items-center justify-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-2 text-sm font-medium transition-all ${
                 statusFilter === tab.id
-                  ? "bg-white text-slate-900 shadow-sm"
-                  : "text-slate-500 hover:text-slate-700"
+                  ? "bg-surface text-foreground shadow-sm"
+                  : "text-muted hover:text-body"
               }`}
             >
               {tab.label}
@@ -103,7 +103,7 @@ export function BuyerOrdersPage() {
                   className={`rounded-full px-1.5 py-0.5 text-xs font-semibold leading-none ${
                     statusFilter === tab.id
                       ? "bg-primary text-white"
-                      : "bg-slate-200 text-slate-600"
+                      : "bg-slate-200 text-body"
                   }`}
                 >
                   {counts[tab.id]}
@@ -129,7 +129,7 @@ export function BuyerOrdersPage() {
           <div className="mb-3 flex items-center gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
             <span className="inline-block h-2 w-2 shrink-0 rounded-full bg-red-500" />
             <span>
-              <strong>{counts.rejected}</strong> order{counts.rejected > 1 ? "s were" : " was"} rejected — check the Rejected tab for details.
+              <strong>{counts.rejected}</strong> order{counts.rejected > 1 ? "s were" : " was"} rejected, check the Rejected tab for details.
             </span>
           </div>
         )}
@@ -140,32 +140,32 @@ export function BuyerOrdersPage() {
             <span className="inline-block h-2 w-2 shrink-0 rounded-full bg-emerald-500 animate-pulse" />
             <span>
               <strong>{counts.ready}</strong> order{counts.ready > 1 ? "s are" : " is"} ready for
-              pickup — show your rotating code at the store!
+              pickup, show your rotating code at the store!
             </span>
           </div>
         )}
 
         {/* Orders list */}
         {loading && orders.length === 0 ? (
-          <div className="rounded-2xl border border-slate-200 bg-white p-12 text-center">
-            <p className="text-slate-500 text-sm">Loading orders…</p>
+          <div className="rounded-2xl border border-border bg-surface p-12 text-center">
+            <p className="text-muted text-sm">Loading orders…</p>
           </div>
         ) : filtered.length === 0 ? (
-          <div className="rounded-2xl border border-slate-200 bg-white p-12 text-center">
+          <div className="rounded-2xl border border-border bg-surface p-12 text-center">
             <Package className="mx-auto mb-3 h-10 w-10 text-slate-300" aria-hidden />
-            <p className="font-medium text-slate-700">
+            <p className="font-medium text-body">
               {orders.length === 0
                 ? "No orders yet"
                 : "No orders match your search"}
             </p>
             {orders.length === 0 && (
               <>
-                <p className="mt-1 text-sm text-slate-500">
+                <p className="mt-1 text-sm text-muted">
                   Browse products and lock in a price to get started.
                 </p>
                 <Link
                   to="/dashboard"
-                  className="mt-5 inline-flex min-h-[48px] items-center justify-center rounded-2xl bg-primary px-6 font-semibold text-white shadow-lg shadow-primary/25 hover:bg-orange-600 transition-all"
+                  className="mt-5 inline-flex min-h-[48px] items-center justify-center rounded-2xl bg-primary px-6 font-semibold text-white shadow-lg shadow-primary/25 hover:bg-accent transition-all"
                 >
                   Browse products
                 </Link>

@@ -138,14 +138,14 @@ export function AuthForm({ authType = "buyer" }) {
         <Dialog.Description className="text-center mb-1">
           We sent a verification link to
         </Dialog.Description>
-        <p className="text-center font-semibold text-slate-800 text-sm mb-4 break-all">{registeredEmail}</p>
+        <p className="text-center font-semibold text-foreground text-sm mb-4 break-all">{registeredEmail}</p>
         <p className="text-center text-sm text-muted-foreground mb-6">
           Click the link in the email to verify your account. Once verified, you can sign in.
         </p>
         <button
           type="button"
           onClick={handleVerifyModalClose}
-          className="w-full min-h-[48px] inline-flex items-center justify-center rounded-xl bg-primary px-4 text-sm font-semibold text-white shadow-lg shadow-primary/25 hover:bg-orange-600 transition-colors touch-manipulation"
+          className="w-full min-h-[48px] inline-flex items-center justify-center rounded-xl bg-primary px-4 text-sm font-semibold text-white shadow-lg shadow-primary/25 hover:bg-accent transition-colors touch-manipulation"
         >
           Got it, go to sign in
         </button>
@@ -156,7 +156,7 @@ export function AuthForm({ authType = "buyer" }) {
         {googleUrl ? (
           <a
             href={`${googleUrl}?type=${authType}`}
-            className="flex w-full min-h-[48px] items-center justify-center gap-3 rounded-xl border-2 border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 hover:bg-slate-50 hover:border-slate-300 transition-colors touch-manipulation"
+            className="flex w-full min-h-[48px] items-center justify-center gap-3 rounded-xl border-2 border-border bg-surface px-4 text-sm font-medium text-body hover:bg-background hover:border-border-strong transition-colors touch-manipulation"
           >
             {GOOGLE_ICON}
             Continue with Google
@@ -165,7 +165,7 @@ export function AuthForm({ authType = "buyer" }) {
           <button
             type="button"
             onClick={() => handleSso(googleUrl, "Google")}
-            className="flex w-full min-h-[48px] items-center justify-center gap-3 rounded-xl border-2 border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 hover:bg-slate-50 hover:border-slate-300 transition-colors touch-manipulation"
+            className="flex w-full min-h-[48px] items-center justify-center gap-3 rounded-xl border-2 border-border bg-surface px-4 text-sm font-medium text-body hover:bg-background hover:border-border-strong transition-colors touch-manipulation"
           >
             {GOOGLE_ICON}
             Continue with Google
@@ -175,10 +175,10 @@ export function AuthForm({ authType = "buyer" }) {
 
       <div className="relative my-6">
         <div className="absolute inset-0 flex items-center">
-          <span className="w-full border-t border-slate-200" />
+          <span className="w-full border-t border-border" />
         </div>
         <div className="relative flex justify-center text-xs font-medium">
-          <span className="bg-white px-2 text-slate-500">or continue with email</span>
+          <span className="bg-surface px-2 text-muted">or continue with email</span>
         </div>
       </div>
 
@@ -194,11 +194,11 @@ export function AuthForm({ authType = "buyer" }) {
           <button
             type="submit"
             disabled={loginForm.formState.isSubmitting}
-            className="w-full min-h-[48px] inline-flex items-center justify-center rounded-xl bg-primary px-4 text-sm font-semibold text-white shadow-lg shadow-primary/25 hover:bg-orange-600 transition-colors disabled:opacity-50 touch-manipulation"
+            className="w-full min-h-[48px] inline-flex items-center justify-center rounded-xl bg-primary px-4 text-sm font-semibold text-white shadow-lg shadow-primary/25 hover:bg-accent transition-colors disabled:opacity-50 touch-manipulation"
           >
             {loginForm.formState.isSubmitting ? "Please wait…" : "Sign in"}
           </button>
-          <p className="text-center text-sm text-slate-500">
+          <p className="text-center text-sm text-muted">
             No account?{" "}
             <button type="button" onClick={switchToSignUp} className="text-primary font-medium hover:underline">
               Create account
@@ -246,10 +246,10 @@ export function AuthForm({ authType = "buyer" }) {
             <label className="flex items-start gap-3 cursor-pointer">
               <input
                 type="checkbox"
-                className="mt-0.5 h-4 w-4 shrink-0 rounded border-slate-300 text-primary accent-primary cursor-pointer"
+                className="mt-0.5 h-4 w-4 shrink-0 rounded border-border-strong text-primary accent-primary cursor-pointer"
                 {...signUpForm.register("termsAccepted")}
               />
-              <span className="text-sm text-slate-600 leading-snug">
+              <span className="text-sm text-body leading-snug">
                 I agree to the{" "}
                 <a href="/terms" target="_blank" rel="noopener noreferrer" className="text-primary font-medium hover:underline">
                   Terms and Conditions
@@ -270,11 +270,11 @@ export function AuthForm({ authType = "buyer" }) {
           <button
             type="submit"
             disabled={signUpForm.formState.isSubmitting}
-            className="w-full min-h-[48px] inline-flex items-center justify-center rounded-xl bg-primary px-4 text-sm font-semibold text-white shadow-lg shadow-primary/25 hover:bg-orange-600 transition-colors disabled:opacity-50 touch-manipulation"
+            className="w-full min-h-[48px] inline-flex items-center justify-center rounded-xl bg-primary px-4 text-sm font-semibold text-white shadow-lg shadow-primary/25 hover:bg-accent transition-colors disabled:opacity-50 touch-manipulation"
           >
             {signUpForm.formState.isSubmitting ? "Please wait…" : "Create account"}
           </button>
-          <p className="text-center text-sm text-slate-500">
+          <p className="text-center text-sm text-muted">
             Already have an account?{" "}
             <button type="button" onClick={switchToSignIn} className="text-primary font-medium hover:underline">
               Sign in

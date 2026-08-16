@@ -50,16 +50,16 @@ export function AdminLoginPage() {
   };
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] flex flex-col items-center justify-center px-4 py-12 bg-slate-50">
-      <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-lg sm:p-8">
+    <div className="min-h-[calc(100vh-4rem)] flex flex-col items-center justify-center px-4 py-12 bg-background">
+      <div className="w-full max-w-md rounded-2xl border border-border bg-surface p-6 shadow-lg sm:p-8">
         <div className="flex items-center gap-3 mb-1">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-50">
             <ShieldCheck className="h-5 w-5 text-red-600" aria-hidden />
           </div>
-          <h1 className="text-xl font-bold text-slate-900">Admin portal</h1>
+          <h1 className="text-xl font-bold text-foreground">Admin portal</h1>
         </div>
-        <p className="mt-1 text-sm text-slate-500 mb-6">
-          Restricted access — authorised personnel only.
+        <p className="mt-1 text-sm text-muted mb-6">
+          Restricted access, authorised personnel only.
         </p>
 
         <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">

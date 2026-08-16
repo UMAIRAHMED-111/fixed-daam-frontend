@@ -1,3 +1,5 @@
+import { formatAmount } from "@/lib/money";
+
 /**
  * Units of measure used for products.
  * `step` is the numeric input granularity for price/stock when this UOM is active.
@@ -66,7 +68,7 @@ const formatNumber = (n) => {
 export const formatUnitPrice = (item) => {
   const price = Number(item?.price) || 0;
   const suffix = formatUomSuffix(item).replace(/^\//, " / ");
-  return `PKR ${price.toFixed(2)}${suffix}`;
+  return `PKR ${formatAmount(price)}${suffix}`;
 };
 
 /**
@@ -120,7 +122,7 @@ export const getRemainingDeliverable = (item) => {
 
 const pluralize = (n, word) => `${formatNumber(n)} ${n === 1 ? word : `${word}s`}`;
 
-/** "12 loaves", "3.5 kg", "5 units" — qty in deliverable units, with proper noun. */
+/** "12 loaves", "3.5 kg", "5 units", qty in deliverable units, with proper noun. */
 export const formatDeliverableQty = (qty, item) => {
   const n = Number(qty) || 0;
   if (!item) return formatNumber(n);

@@ -11,6 +11,8 @@ import { UserProfilePage } from "@/features/dashboard/pages/UserProfilePage";
 import { AdminOrdersPage } from "@/features/dashboard/pages/AdminOrdersPage";
 import { AdminMerchantsPage } from "@/features/dashboard/pages/AdminMerchantsPage";
 import { AdminBuyersPage } from "@/features/dashboard/pages/AdminBuyersPage";
+import { CheckoutPage } from "@/features/checkout";
+import { GuestOrderPage } from "@/features/checkout/GuestOrderPage";
 import { NotFoundPage } from "@/features/not-found";
 import { TermsPage } from "@/features/legal/TermsPage";
 import { PrivacyPage } from "@/features/legal/PrivacyPage";
@@ -24,8 +26,12 @@ export default function App() {
         <Route path="/auth" element={<AuthPage />} />
         <Route path="/admin" element={<AdminLoginPage />} />
         <Route path="/verify-email" element={<VerifyEmailPage />} />
-        {/* Public storefront product page — browsing needs no account */}
+        {/* Public storefront product page, browsing needs no account */}
         <Route path="/product/:id" element={<ProductDetailPage />} />
+        {/* Staged checkout, signing in happens at the contact step */}
+        <Route path="/checkout" element={<CheckoutPage />} />
+        {/* Guest order tracking: the token in the link stands in for a session */}
+        <Route path="/track/:orderId" element={<GuestOrderPage />} />
         <Route
           path="/dashboard"
           element={

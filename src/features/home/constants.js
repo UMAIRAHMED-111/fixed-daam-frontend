@@ -4,12 +4,12 @@ export const TAGLINE = "Pay now. Buy later. Lock in today's price.";
 export const HOW_IT_WORKS_STEPS = [
   {
     title: "Lock the price",
-    description: "Pay today's price and secure your item. No inflation risk—your purchase is guaranteed at the rate you paid.",
+    description: "Pay today's price and secure your item. No inflation risk, your purchase is guaranteed at the rate you paid.",
     icon: "lock",
   },
   {
     title: "Get your QR code",
-    description: "Receive a unique QR code linked to your purchase. Store it safely—you'll use it when you're ready to collect.",
+    description: "Receive a unique QR code linked to your purchase. Store it safely, you'll use it when you're ready to collect.",
     icon: "qr",
   },
   {

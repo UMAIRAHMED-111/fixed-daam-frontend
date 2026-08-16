@@ -30,8 +30,8 @@ export function ProductGrid({ search, category, priceMin, priceMax }) {
 
   if (filtered.length === 0) {
     return (
-      <div className="rounded-2xl border border-slate-200 bg-white p-12 text-center">
-        <p className="text-slate-600">No products match your filters.</p>
+      <div className="rounded-2xl border border-border bg-surface p-12 text-center">
+        <p className="text-body">No products match your filters.</p>
       </div>
     );
   }

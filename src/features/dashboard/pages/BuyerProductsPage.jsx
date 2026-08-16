@@ -25,13 +25,13 @@ export function BuyerProductsPage() {
   }, [fetchAllProducts]);
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] bg-slate-50">
+    <div className="min-h-[calc(100vh-4rem)] bg-background">
       <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-slate-900">Products</h1>
-            <p className="mt-0.5 text-sm text-slate-500">
+            <h1 className="text-2xl font-bold text-foreground">Products</h1>
+            <p className="mt-0.5 text-sm text-muted">
               Browse and lock in prices from merchants
             </p>
           </div>
@@ -42,7 +42,7 @@ export function BuyerProductsPage() {
             </div>
 
             {/* View toggle */}
-            <div className="flex shrink-0 gap-0.5 rounded-xl border border-slate-200 bg-white p-1 shadow-sm">
+            <div className="flex shrink-0 gap-0.5 rounded-xl border border-border bg-surface p-1 shadow-sm">
               {VIEW_MODES.map(({ id, label, Icon }) => (
                 <button
                   key={id}
@@ -52,7 +52,7 @@ export function BuyerProductsPage() {
                   className={`flex h-9 w-9 items-center justify-center rounded-lg transition-all touch-manipulation ${
                     viewMode === id
                       ? "bg-primary text-white shadow-sm"
-                      : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
+                      : "text-muted hover:text-body hover:bg-background"
                   }`}
                 >
                   <Icon className="h-4 w-4" aria-hidden />

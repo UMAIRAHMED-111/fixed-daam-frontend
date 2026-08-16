@@ -2,7 +2,7 @@ import { create } from "zustand";
 import { api } from "@/lib/api";
 
 /**
- * Orders store — backed by /v1/orders API.
+ * Orders store, backed by /v1/orders API.
  * Order shape: { id, buyerId, items[], total, redemptionCode, status: 'locked'|'ready'|'delivered', createdAt }
  */
 export const useOrdersStore = create((set, get) => ({
@@ -48,6 +48,36 @@ export const useOrdersStore = create((set, get) => ({
     const order = res.data;
     set((state) => ({ orders: [order, ...state.orders] }));
     return order;
+  },
+
+  /**
+   * Place an order without an account. The contact details identify the buyer and
+   * the response carries a token that tracks this one order.
+   * @param {Array<{productId: string, quantity: number}>} cartItems
+   * @param {File} paymentProofFile
+   * @param {{name: string, email: string, phoneNumber: string}} contact
+   * @param {{ delivery?: boolean, deliveryAddress?: string }} [options]
+   * @returns {Promise<{order: Object, guestToken: string}>}
+   */
+  addGuestOrder: async (cartItems, paymentProofFile, contact, options = {}) => {
+    const formData = new FormData();
+    formData.append("items", JSON.stringify(cartItems));
+    formData.append("name", contact.name);
+    formData.append("email", contact.email);
+    formData.append("phoneNumber", contact.phoneNumber);
+    if (paymentProofFile) {
+      formData.append("paymentProof", paymentProofFile);
+    }
+    if (options.delivery) {
+      formData.append("delivery", "true");
+      if (options.deliveryAddress) {
+        formData.append("deliveryAddress", options.deliveryAddress);
+      }
+    }
+    const res = await api.post("/v1/orders/guest", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+    return res.data;
   },
 
   markReady: async (orderId) => {

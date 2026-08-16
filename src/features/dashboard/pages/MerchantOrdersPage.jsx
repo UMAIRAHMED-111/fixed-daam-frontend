@@ -37,7 +37,7 @@ const STATUS_CONFIG = {
   pending_verification: { label: "Pending payment", className: "bg-amber-100 text-amber-700" },
   locked: { label: "New order", className: "bg-blue-100 text-blue-800" },
   ready: { label: "Ready for pickup", className: "bg-emerald-100 text-emerald-800" },
-  delivered: { label: "Delivered", className: "bg-slate-100 text-slate-600" },
+  delivered: { label: "Delivered", className: "bg-surface-sunken text-body" },
   rejected: { label: "Rejected", className: "bg-red-100 text-red-700" },
 };
 
@@ -56,7 +56,7 @@ const formatNum = (n) => {
 };
 
 /**
- * Inline pickup panel — lets the merchant dispense partial quantities
+ * Inline pickup panel, lets the merchant dispense partial quantities
  * against the buyer's live TOTP code.
  */
 function PickupPanel({ order, merchantId, initialCode = "" }) {
@@ -95,7 +95,7 @@ function PickupPanel({ order, merchantId, initialCode = "" }) {
     setQty(buildInitialQty());
   }, [buildInitialQty]);
 
-  // External code entered upstream (top form) — prefill once.
+  // External code entered upstream (top form), prefill once.
   useEffect(() => {
     if (initialCode) setCode(initialCode);
   }, [initialCode]);
@@ -156,7 +156,7 @@ function PickupPanel({ order, merchantId, initialCode = "" }) {
       if (stillRemaining) {
         toast.success("Pickup recorded. Buyer can collect the rest later.");
       } else if (updated.status === "delivered") {
-        toast.success("Pickup complete — order fully delivered.");
+        toast.success("Pickup complete, order fully delivered.");
       } else {
         toast.success("Pickup recorded for your items.");
       }
@@ -173,7 +173,7 @@ function PickupPanel({ order, merchantId, initialCode = "" }) {
 
   if (allRemaining) {
     return (
-      <div className="border-t border-slate-100 bg-emerald-50/50 px-5 py-4">
+      <div className="border-t border-border bg-emerald-50/50 px-5 py-4">
         <p className="text-sm font-medium text-emerald-800 flex items-center gap-2">
           <CheckCircle2 className="h-4 w-4" />
           You've dispensed all of your items in this order.
@@ -185,9 +185,9 @@ function PickupPanel({ order, merchantId, initialCode = "" }) {
   return (
     <form
       onSubmit={handleSubmit}
-      className="border-t border-slate-100 bg-slate-50/60 px-5 py-4 space-y-4"
+      className="border-t border-border bg-slate-50/60 px-5 py-4 space-y-4"
     >
-      <div className="flex items-center gap-2 text-sm font-semibold text-slate-800">
+      <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
         <ScanLine className="h-4 w-4 text-primary" />
         Record pickup
       </div>
@@ -206,23 +206,23 @@ function PickupPanel({ order, merchantId, initialCode = "" }) {
           return (
             <li
               key={idx}
-              className="rounded-xl border border-slate-200 bg-white p-3"
+              className="rounded-xl border border-border bg-surface p-3"
             >
               <div className="flex flex-wrap items-baseline justify-between gap-2">
-                <p className="font-medium text-slate-800 truncate">
+                <p className="font-medium text-foreground truncate">
                   {item.name}
                   {item.uom === "bundle" && item.bundleSize && innerUom && (
-                    <span className="ml-2 text-xs font-normal text-slate-500">
+                    <span className="ml-2 text-xs font-normal text-muted">
                       ({item.quantity} × {item.bundleSize} {innerUom.short})
                     </span>
                   )}
                 </p>
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-muted">
                   {formatDeliverableQty(delivered, item)} / {formatDeliverableQty(total, item)} given
                 </p>
               </div>
 
-              <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
+              <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-surface-sunken">
                 <div
                   className="h-full bg-emerald-500 transition-[width] duration-300"
                   style={{ width: `${progress * 100}%` }}
@@ -236,7 +236,7 @@ function PickupPanel({ order, merchantId, initialCode = "" }) {
                 </p>
               ) : (
                 <div className="mt-3 flex flex-wrap items-center gap-2">
-                  <label className="text-xs font-medium text-slate-600">
+                  <label className="text-xs font-medium text-body">
                     Give now
                   </label>
                   <input
@@ -247,13 +247,13 @@ function PickupPanel({ order, merchantId, initialCode = "" }) {
                     step={step}
                     value={qty[idx] ?? ""}
                     onChange={(e) => handleChange(idx, e.target.value)}
-                    className="min-h-[44px] w-24 rounded-lg border border-slate-200 px-3 py-2 text-base text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary touch-manipulation"
+                    className="min-h-[44px] w-24 rounded-lg border border-border px-3 py-2 text-base text-foreground focus:outline-none focus:ring-2 focus:ring-primary touch-manipulation"
                   />
-                  <span className="text-xs text-slate-500">{unit}</span>
+                  <span className="text-xs text-muted">{unit}</span>
                   <button
                     type="button"
                     onClick={() => setMax(idx, item)}
-                    className="ml-1 rounded-md border border-slate-200 px-2 py-1 text-[11px] font-medium text-slate-600 hover:bg-slate-50"
+                    className="ml-1 rounded-md border border-border px-2 py-1 text-[11px] font-medium text-body hover:bg-background"
                   >
                     Max ({formatDeliverableQty(remaining, item)})
                   </button>
@@ -265,7 +265,7 @@ function PickupPanel({ order, merchantId, initialCode = "" }) {
       </ul>
 
       <div>
-        <label className="block text-xs font-medium text-slate-600 mb-1.5">
+        <label className="block text-xs font-medium text-body mb-1.5">
           Buyer's 6-digit pickup code
         </label>
         <input
@@ -278,7 +278,7 @@ function PickupPanel({ order, merchantId, initialCode = "" }) {
             setCode(e.target.value.replace(/\D/g, ""));
             setError("");
           }}
-          className="min-h-[44px] w-full rounded-lg border border-slate-200 px-4 py-2 text-center text-xl font-bold font-mono tracking-widest text-slate-900 placeholder:text-slate-300 placeholder:text-base placeholder:font-normal placeholder:tracking-normal focus:outline-none focus:ring-2 focus:ring-primary"
+          className="min-h-[44px] w-full rounded-lg border border-border px-4 py-2 text-center text-xl font-bold font-mono tracking-widest text-foreground placeholder:text-slate-300 placeholder:text-base placeholder:font-normal placeholder:tracking-normal focus:outline-none focus:ring-2 focus:ring-primary"
         />
       </div>
 
@@ -288,7 +288,7 @@ function PickupPanel({ order, merchantId, initialCode = "" }) {
         <button
           type="submit"
           disabled={submitting}
-          className="min-h-[44px] flex-1 rounded-2xl bg-primary px-4 text-sm font-semibold text-white shadow-lg shadow-primary/25 hover:bg-orange-600 transition-all touch-manipulation disabled:opacity-60"
+          className="min-h-[44px] flex-1 rounded-2xl bg-primary px-4 text-sm font-semibold text-white shadow-lg shadow-primary/25 hover:bg-accent transition-all touch-manipulation disabled:opacity-60"
         >
           {submitting ? "Recording…" : "Confirm pickup"}
         </button>
@@ -412,26 +412,26 @@ export function MerchantOrdersPage() {
     { label: "Pending", value: counts.pending_verification, Icon: Clock, color: "text-amber-600", bg: "bg-amber-50" },
     { label: "New", value: counts.locked, Icon: Package, color: "text-blue-600", bg: "bg-blue-50" },
     { label: "Ready", value: counts.ready, Icon: Truck, color: "text-emerald-600", bg: "bg-emerald-50" },
-    { label: "Delivered", value: counts.delivered, Icon: CheckCircle2, color: "text-slate-500", bg: "bg-slate-100" },
+    { label: "Delivered", value: counts.delivered, Icon: CheckCircle2, color: "text-muted", bg: "bg-surface-sunken" },
   ];
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] bg-slate-50">
+    <div className="min-h-[calc(100vh-4rem)] bg-background">
       <div className="mx-auto max-w-4xl px-4 py-6 sm:px-6 lg:px-8">
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-slate-900">Orders</h1>
-          <p className="mt-1 text-sm text-slate-600">
+          <h1 className="text-2xl font-bold text-foreground">Orders</h1>
+          <p className="mt-1 text-sm text-body">
             Verify payments, prepare orders, and dispense items at pickup.
           </p>
         </div>
 
         {/* Quick lookup by code */}
-        <div className="mb-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="mb-6 rounded-2xl border border-border bg-surface p-5 shadow-sm">
           <div className="flex items-center gap-2 mb-3">
             <KeyRound className="h-4 w-4 text-primary" />
-            <h2 className="text-sm font-semibold text-slate-800">Buyer at the counter?</h2>
+            <h2 className="text-sm font-semibold text-foreground">Buyer at the counter?</h2>
           </div>
-          <p className="mb-3 text-xs text-slate-500">
+          <p className="mb-3 text-xs text-muted">
             Type their 6-digit pickup code to jump straight to the order.
           </p>
           <form onSubmit={handleCodeValidate} className="flex gap-2">
@@ -445,12 +445,12 @@ export function MerchantOrdersPage() {
                 setCodeInput(e.target.value.replace(/\D/g, ""));
                 setCodeError("");
               }}
-              className="flex-1 min-h-[44px] rounded-xl border border-slate-200 px-4 text-center text-xl font-bold font-mono tracking-widest text-slate-900 placeholder:text-slate-300 placeholder:text-base placeholder:font-normal placeholder:tracking-normal focus:outline-none focus:ring-2 focus:ring-primary"
+              className="flex-1 min-h-[44px] rounded-xl border border-border px-4 text-center text-xl font-bold font-mono tracking-widest text-foreground placeholder:text-slate-300 placeholder:text-base placeholder:font-normal placeholder:tracking-normal focus:outline-none focus:ring-2 focus:ring-primary"
             />
             <button
               type="submit"
               disabled={codeLoading || codeInput.length !== 6}
-              className="min-h-[44px] rounded-xl bg-primary px-5 text-sm font-semibold text-white shadow-lg shadow-primary/25 hover:bg-orange-600 transition-all disabled:opacity-50"
+              className="min-h-[44px] rounded-xl bg-primary px-5 text-sm font-semibold text-white shadow-lg shadow-primary/25 hover:bg-accent transition-all disabled:opacity-50"
             >
               {codeLoading ? "Checking…" : "Find order"}
             </button>
@@ -461,12 +461,12 @@ export function MerchantOrdersPage() {
         {/* Stats */}
         <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
           {STATS.map(({ label, value, Icon, color, bg }) => (
-            <div key={label} className="flex flex-col rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+            <div key={label} className="flex flex-col rounded-2xl border border-border bg-surface p-4 shadow-sm">
               <div className={`mb-2 inline-flex h-8 w-8 items-center justify-center rounded-xl ${bg}`}>
                 <Icon className={`h-4 w-4 ${color}`} aria-hidden />
               </div>
-              <p className="text-2xl font-bold text-slate-900 leading-none">{value}</p>
-              <p className="mt-1 text-xs font-medium text-slate-500">{label}</p>
+              <p className="text-2xl font-bold text-foreground leading-none">{value}</p>
+              <p className="mt-1 text-xs font-medium text-muted">{label}</p>
             </div>
           ))}
         </div>
@@ -492,18 +492,18 @@ export function MerchantOrdersPage() {
 
         {/* Search */}
         <div className="relative mb-4">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" aria-hidden />
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" aria-hidden />
           <input
             type="search"
             placeholder="Search by buyer name, order ID, or product…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full min-h-[44px] rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-4 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary touch-manipulation"
+            className="w-full min-h-[44px] rounded-xl border border-border bg-surface py-2.5 pl-10 pr-4 text-sm text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary touch-manipulation"
           />
         </div>
 
         {/* Status tabs */}
-        <div className="mb-6 flex gap-1 overflow-x-auto rounded-xl bg-slate-100 p-1 scrollbar-none">
+        <div className="mb-6 flex gap-1 overflow-x-auto rounded-xl bg-surface-sunken p-1 scrollbar-none">
           {STATUS_TABS.map((tab) => (
             <button
               key={tab.id}
@@ -511,14 +511,14 @@ export function MerchantOrdersPage() {
               onClick={() => setStatusFilter(tab.id)}
               className={`flex flex-1 min-w-max items-center justify-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-2 text-sm font-medium transition-all ${
                 statusFilter === tab.id
-                  ? "bg-white text-slate-900 shadow-sm"
-                  : "text-slate-500 hover:text-slate-700"
+                  ? "bg-surface text-foreground shadow-sm"
+                  : "text-muted hover:text-body"
               }`}
             >
               {tab.label}
               {counts[tab.id] > 0 && (
                 <span className={`rounded-full px-1.5 py-0.5 text-xs font-semibold leading-none ${
-                  statusFilter === tab.id ? "bg-primary text-white" : "bg-slate-200 text-slate-600"
+                  statusFilter === tab.id ? "bg-primary text-white" : "bg-slate-200 text-body"
                 }`}>
                   {counts[tab.id]}
                 </span>
@@ -529,17 +529,17 @@ export function MerchantOrdersPage() {
 
         {/* Orders list */}
         {loading && orders.length === 0 ? (
-          <div className="rounded-2xl border border-slate-200 bg-white p-12 text-center">
-            <p className="text-slate-500 text-sm">Loading orders…</p>
+          <div className="rounded-2xl border border-border bg-surface p-12 text-center">
+            <p className="text-muted text-sm">Loading orders…</p>
           </div>
         ) : filtered.length === 0 ? (
-          <div className="rounded-2xl border border-slate-200 bg-white p-12 text-center">
+          <div className="rounded-2xl border border-border bg-surface p-12 text-center">
             <Package className="mx-auto mb-3 h-10 w-10 text-slate-300" aria-hidden />
-            <p className="font-medium text-slate-700">
+            <p className="font-medium text-body">
               {orders.length === 0 ? "No orders yet" : "No orders match your search"}
             </p>
             {orders.length === 0 && (
-              <p className="mt-1 text-sm text-slate-500">
+              <p className="mt-1 text-sm text-muted">
                 Orders containing your products will appear here.
               </p>
             )}
@@ -567,19 +567,19 @@ export function MerchantOrdersPage() {
                     if (el) orderRefs.current[order.id] = el;
                     else delete orderRefs.current[order.id];
                   }}
-                  className={`overflow-hidden rounded-2xl border bg-white shadow-sm ${
-                    pickupOpen ? "border-primary ring-2 ring-primary/20" : "border-slate-200"
+                  className={`overflow-hidden rounded-2xl border bg-surface shadow-sm ${
+                    pickupOpen ? "border-primary ring-2 ring-primary/20" : "border-border"
                   }`}
                 >
                   {/* Order header */}
-                  <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 bg-slate-50 px-5 py-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border bg-background px-5 py-3">
                     <div className="flex flex-wrap items-center gap-2">
                       <StatusBadge status={order.status} />
-                      <span className="font-mono text-xs text-slate-400">
+                      <span className="font-mono text-xs text-muted">
                         #{order.id?.slice(-8).toUpperCase()}
                       </span>
                     </div>
-                    <span className="text-xs text-slate-500">
+                    <span className="text-xs text-muted">
                       {new Date(order.createdAt).toLocaleString(undefined, {
                         dateStyle: "medium",
                         timeStyle: "short",
@@ -592,24 +592,24 @@ export function MerchantOrdersPage() {
                     <div className="flex-1 min-w-0">
                       {(order.buyerName || order.buyerEmail) && (
                         <div className="mb-4">
-                          <p className="mb-1.5 text-xs font-medium text-slate-400 uppercase tracking-wide">Customer</p>
+                          <p className="mb-1.5 text-xs font-medium text-muted uppercase tracking-wide">Customer</p>
                           <div className="flex items-center gap-3">
                             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary">
                               {(order.buyerName || order.buyerEmail)?.[0]?.toUpperCase()}
                             </div>
                             <div className="min-w-0">
                               {order.buyerName && (
-                                <p className="text-sm font-semibold text-slate-800 truncate">{order.buyerName}</p>
+                                <p className="text-sm font-semibold text-foreground truncate">{order.buyerName}</p>
                               )}
                               {order.buyerEmail && (
-                                <p className="text-xs text-slate-500 truncate">{order.buyerEmail}</p>
+                                <p className="text-xs text-muted truncate">{order.buyerEmail}</p>
                               )}
                             </div>
                           </div>
                         </div>
                       )}
 
-                      <p className="mb-1.5 text-xs font-medium text-slate-400 uppercase tracking-wide">Items</p>
+                      <p className="mb-1.5 text-xs font-medium text-muted uppercase tracking-wide">Items</p>
                       <ul className="space-y-1.5">
                         {items.map((item, i) => {
                           const total = getDeliverableTotal(item);
@@ -619,17 +619,17 @@ export function MerchantOrdersPage() {
                           return (
                             <li key={i} className="text-sm">
                               <div className="flex items-center justify-between gap-4">
-                                <span className="text-slate-700 truncate">
+                                <span className="text-body truncate">
                                   {item.name}{" "}
-                                  <span className="text-slate-400">· {formatQuantity(item.quantity, item)}</span>
+                                  <span className="text-muted">· {formatQuantity(item.quantity, item)}</span>
                                 </span>
-                                <span className="shrink-0 text-slate-600 font-medium">
+                                <span className="shrink-0 text-body font-medium">
                                   PKR {(item.price * item.quantity).toLocaleString()}
                                 </span>
                               </div>
                               {(isReady || isDelivered) && total > 0 && (
                                 <div className="mt-1 flex items-center gap-2">
-                                  <div className="h-1 flex-1 overflow-hidden rounded-full bg-slate-100">
+                                  <div className="h-1 flex-1 overflow-hidden rounded-full bg-surface-sunken">
                                     <div
                                       className="h-full bg-emerald-500"
                                       style={{ width: `${Math.min(100, (delivered / total) * 100)}%` }}
@@ -637,7 +637,7 @@ export function MerchantOrdersPage() {
                                   </div>
                                   <span
                                     className={`text-[11px] font-medium ${
-                                      fullyDelivered ? "text-emerald-700" : "text-slate-500"
+                                      fullyDelivered ? "text-emerald-700" : "text-muted"
                                     }`}
                                   >
                                     {formatDeliverableQty(delivered, item)} / {formatDeliverableQty(total, item)}
@@ -650,9 +650,9 @@ export function MerchantOrdersPage() {
                       </ul>
 
                       {order.total != null && (
-                        <div className="mt-3 flex items-center justify-between border-t border-slate-100 pt-2">
-                          <span className="text-xs font-medium text-slate-500">Total</span>
-                          <span className="text-sm font-bold text-slate-900">
+                        <div className="mt-3 flex items-center justify-between border-t border-border pt-2">
+                          <span className="text-xs font-medium text-muted">Total</span>
+                          <span className="text-sm font-bold text-foreground">
                             PKR {order.total.toLocaleString()}
                           </span>
                         </div>
@@ -669,13 +669,13 @@ export function MerchantOrdersPage() {
                     <div className="flex shrink-0 flex-col items-center gap-3">
                       {isPending && order.paymentProof && (
                         <div>
-                          <p className="mb-1.5 text-center text-xs font-medium text-slate-500">
+                          <p className="mb-1.5 text-center text-xs font-medium text-muted">
                             Payment proof
                           </p>
                           <button
                             type="button"
                             onClick={() => setLightboxSrc(order.paymentProof)}
-                            className="block overflow-hidden rounded-xl border border-slate-200 hover:border-primary transition-colors"
+                            className="block overflow-hidden rounded-xl border border-border hover:border-primary transition-colors"
                             title="Click to enlarge"
                           >
                             <img
@@ -687,7 +687,7 @@ export function MerchantOrdersPage() {
                         </div>
                       )}
 
-                      <div className="w-28 h-28 bg-slate-100 rounded-xl overflow-hidden border border-slate-200 flex items-center justify-center">
+                      <div className="w-28 h-28 bg-surface-sunken rounded-xl overflow-hidden border border-border flex items-center justify-center">
                         {items[0]?.image ? (
                           <img
                             src={items[0].image}
@@ -704,7 +704,7 @@ export function MerchantOrdersPage() {
                           type="button"
                           onClick={() => handleMarkReady(order.id)}
                           disabled={isReadyLoading}
-                          className="w-full min-h-[44px] rounded-2xl bg-primary px-4 text-sm font-semibold text-white shadow-lg shadow-primary/25 hover:bg-orange-600 transition-all touch-manipulation disabled:opacity-60"
+                          className="w-full min-h-[44px] rounded-2xl bg-primary px-4 text-sm font-semibold text-white shadow-lg shadow-primary/25 hover:bg-accent transition-all touch-manipulation disabled:opacity-60"
                         >
                           {isReadyLoading ? "Updating…" : "Mark ready"}
                         </button>
@@ -751,7 +751,7 @@ export function MerchantOrdersPage() {
                   </div>
 
                   {isPending && (
-                    <div className="border-t border-slate-100 px-5 py-3">
+                    <div className="border-t border-border px-5 py-3">
                       <p className="text-xs text-amber-700 bg-amber-50 rounded-lg px-3 py-2">
                         Awaiting admin payment verification.
                       </p>

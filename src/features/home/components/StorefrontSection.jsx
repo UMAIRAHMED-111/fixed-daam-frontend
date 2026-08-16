@@ -1,23 +1,18 @@
-import { useEffect, useState } from "react";
-import { LayoutGrid, Store } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Store } from "lucide-react";
 import { SearchBar } from "@/features/dashboard/components/SearchBar";
-import { ProductGrid } from "@/features/dashboard/components/ProductGrid";
-import { MerchantSectionsView } from "@/features/dashboard/components/MerchantSectionsView";
+import { ProductCard } from "@/features/dashboard/components/ProductCard";
+import { SkeletonCards } from "@/components/ui/Skeleton";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { useInventoryStore } from "@/stores/inventoryStore";
-import { Loader } from "@/components/ui/Loader";
-
-const VIEW_MODES = [
-  { id: "byMerchant", label: "By merchant", Icon: Store },
-  { id: "grid", label: "All products", Icon: LayoutGrid },
-];
 
 /**
- * Public storefront on the landing page — anyone can browse merchants and their
- * products without signing in. Sign-in is only required at checkout.
+ * Public storefront, browse merchants and their stock without an account.
+ * Grouped by merchant, because "who am I collecting from" is the question a
+ * buyer actually has before they lock a price.
  */
 export function StorefrontSection() {
   const [search, setSearch] = useState("");
-  const [viewMode, setViewMode] = useState("byMerchant");
 
   const products = useInventoryStore((s) => s.products);
   const loading = useInventoryStore((s) => s.loading);
@@ -27,63 +22,92 @@ export function StorefrontSection() {
     fetchAllProducts();
   }, [fetchAllProducts]);
 
+  const merchants = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    const matched = q
+      ? products.filter((p) =>
+          [p.name, p.description, p.category, p.merchantName]
+            .filter(Boolean)
+            .some((field) => field.toLowerCase().includes(q))
+        )
+      : products;
+
+    const groups = new Map();
+    matched.forEach((p) => {
+      const key = p.merchantId ?? p.merchantName ?? "unknown";
+      if (!groups.has(key)) {
+        groups.set(key, { name: p.merchantName || "Unknown store", products: [] });
+      }
+      groups.get(key).products.push(p);
+    });
+    return [...groups.values()].sort((a, b) => a.name.localeCompare(b.name));
+  }, [products, search]);
+
+  const totalShown = merchants.reduce((sum, m) => sum + m.products.length, 0);
+
   return (
-    <section id="shop" className="scroll-mt-16 border-t border-slate-200 bg-slate-50">
-      <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-20 lg:px-8">
-        <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+    <section id="shop" className="scroll-mt-16 border-t border-border bg-background">
+      <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-24 lg:px-8">
+        <div className="flex flex-col gap-6 border-b border-border pb-8 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-widest text-primary">
-              Shop
-            </p>
-            <h2 className="mt-2 text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">
-              Browse our merchants
+            <h2 className="text-[clamp(1.75rem,3.5vw,2.75rem)] font-extrabold tracking-[-0.03em] text-foreground">
+              What&apos;s in the market today
             </h2>
-            <p className="mt-2 max-w-xl text-slate-600">
-              Lock today&apos;s price on anything below. Browse freely — you only need an
-              account when you check out.
+            <p className="mt-3 max-w-[52ch] text-lg leading-relaxed text-body">
+              Every price below is the price you pay, locked the moment you check out.
+              No account needed to look around.
             </p>
           </div>
-
-          <div className="flex items-center gap-3">
-            <div className="w-full sm:max-w-xs">
-              <SearchBar value={search} onChange={setSearch} />
-            </div>
-            <div className="flex shrink-0 gap-0.5 rounded-xl border border-slate-200 bg-white p-1 shadow-sm">
-              {VIEW_MODES.map(({ id, label, Icon }) => (
-                <button
-                  key={id}
-                  type="button"
-                  title={label}
-                  onClick={() => setViewMode(id)}
-                  className={`flex h-9 w-9 items-center justify-center rounded-lg transition-all touch-manipulation ${
-                    viewMode === id
-                      ? "bg-primary text-white shadow-sm"
-                      : "text-slate-500 hover:bg-slate-50 hover:text-slate-700"
-                  }`}
-                >
-                  <Icon className="h-4 w-4" aria-hidden />
-                  <span className="sr-only">{label}</span>
-                </button>
-              ))}
-            </div>
+          <div className="w-full sm:max-w-xs">
+            <SearchBar
+              value={search}
+              onChange={setSearch}
+              placeholder="Search products or stores…"
+            />
           </div>
         </div>
 
         {loading && products.length === 0 ? (
-          <div className="flex justify-center rounded-2xl border border-slate-200 bg-white py-16">
-            <Loader />
-          </div>
-        ) : products.length === 0 ? (
-          <div className="rounded-2xl border border-slate-200 bg-white p-12 text-center">
-            <p className="font-medium text-slate-700">No products listed yet.</p>
-            <p className="mt-1 text-sm text-slate-500">
-              Merchants are still stocking their shelves — check back soon.
-            </p>
-          </div>
-        ) : viewMode === "byMerchant" ? (
-          <MerchantSectionsView search={search} />
+          <SkeletonCards className="mt-10" count={6} />
+        ) : merchants.length === 0 ? (
+          <EmptyState
+            className="mt-10"
+            icon={Store}
+            title={search ? `Nothing matches “${search}”` : "No products listed yet"}
+            description={
+              search
+                ? "Try a different product or store name."
+                : "Merchants are still stocking their shelves, check back shortly."
+            }
+          />
         ) : (
-          <ProductGrid search={search} />
+          <div className="mt-12 space-y-16">
+            {merchants.map((merchant) => (
+              <section key={merchant.name} aria-label={merchant.name}>
+                <div className="mb-6 flex items-baseline justify-between gap-4 border-b border-border pb-3">
+                  <h3 className="flex items-center gap-2.5 text-lg font-bold tracking-[-0.01em] text-foreground">
+                    <Store className="h-4 w-4 text-primary" aria-hidden />
+                    {merchant.name}
+                  </h3>
+                  <p className="tnum shrink-0 text-sm text-muted">
+                    {merchant.products.length}{" "}
+                    {merchant.products.length === 1 ? "item" : "items"}
+                  </p>
+                </div>
+                <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                  {merchant.products.map((product) => (
+                    <ProductCard key={product.id} product={product} />
+                  ))}
+                </div>
+              </section>
+            ))}
+          </div>
+        )}
+
+        {search && totalShown > 0 && (
+          <p className="tnum mt-8 text-sm text-muted">
+            {totalShown} {totalShown === 1 ? "result" : "results"} for “{search}”
+          </p>
         )}
       </div>
     </section>

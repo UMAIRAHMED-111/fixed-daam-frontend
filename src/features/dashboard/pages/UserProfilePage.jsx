@@ -116,28 +116,28 @@ export function UserProfilePage() {
   };
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] bg-slate-50">
+    <div className="min-h-[calc(100vh-4rem)] bg-background">
       <div className="mx-auto max-w-2xl px-4 py-8 sm:px-6 lg:px-8 space-y-6">
 
         {/* ── Profile header ── */}
-        <div className="flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="flex items-center gap-4 rounded-2xl border border-border bg-surface p-6 shadow-sm">
           <Avatar name={user?.name} />
           <div className="min-w-0">
-            <h1 className="truncate text-xl font-bold text-slate-900">
-              {user?.name || "—"}
+            <h1 className="truncate text-xl font-bold text-foreground">
+              {user?.name || "-"}
             </h1>
-            <p className="truncate text-sm text-slate-500">{user?.email}</p>
-            <span className={`mt-2 inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize ${ROLE_BADGE[user?.role] ?? "bg-slate-100 text-slate-600"}`}>
+            <p className="truncate text-sm text-muted">{user?.email}</p>
+            <span className={`mt-2 inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize ${ROLE_BADGE[user?.role] ?? "bg-surface-sunken text-body"}`}>
               {user?.role}
             </span>
           </div>
         </div>
 
         {/* ── Profile details ── */}
-        <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
-          <div className="border-b border-slate-100 px-6 py-4">
-            <h2 className="font-semibold text-slate-900">Profile details</h2>
-            <p className="text-sm text-slate-500">Update your name, email, and phone number.</p>
+        <section className="rounded-2xl border border-border bg-surface shadow-sm">
+          <div className="border-b border-border px-6 py-4">
+            <h2 className="font-semibold text-foreground">Profile details</h2>
+            <p className="text-sm text-muted">Update your name, email, and phone number.</p>
           </div>
           <form onSubmit={profileForm.handleSubmit(handleProfileSave)} className="px-6 py-5 space-y-4">
             <FormField
@@ -174,7 +174,7 @@ export function UserProfilePage() {
               <button
                 type="submit"
                 disabled={profileForm.formState.isSubmitting || !profileForm.formState.isDirty}
-                className="min-h-[44px] inline-flex items-center justify-center rounded-xl bg-primary px-6 text-sm font-semibold text-white shadow-md shadow-primary/20 hover:bg-orange-600 transition-colors disabled:opacity-50"
+                className="min-h-[44px] inline-flex items-center justify-center rounded-xl bg-primary px-6 text-sm font-semibold text-white shadow-md shadow-primary/20 hover:bg-accent transition-colors disabled:opacity-50"
               >
                 {profileForm.formState.isSubmitting ? "Saving…" : "Save changes"}
               </button>
@@ -183,10 +183,10 @@ export function UserProfilePage() {
         </section>
 
         {/* ── Change password ── */}
-        <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
-          <div className="border-b border-slate-100 px-6 py-4">
-            <h2 className="font-semibold text-slate-900">Change password</h2>
-            <p className="text-sm text-slate-500">Choose a strong password you don&rsquo;t use elsewhere.</p>
+        <section className="rounded-2xl border border-border bg-surface shadow-sm">
+          <div className="border-b border-border px-6 py-4">
+            <h2 className="font-semibold text-foreground">Change password</h2>
+            <p className="text-sm text-muted">Choose a strong password you don&rsquo;t use elsewhere.</p>
           </div>
           <form onSubmit={passwordForm.handleSubmit(handlePasswordChange)} className="px-6 py-5 space-y-4">
             <FormField
@@ -221,7 +221,7 @@ export function UserProfilePage() {
               <button
                 type="submit"
                 disabled={passwordForm.formState.isSubmitting}
-                className="min-h-[44px] inline-flex items-center justify-center rounded-xl bg-primary px-6 text-sm font-semibold text-white shadow-md shadow-primary/20 hover:bg-orange-600 transition-colors disabled:opacity-50"
+                className="min-h-[44px] inline-flex items-center justify-center rounded-xl bg-primary px-6 text-sm font-semibold text-white shadow-md shadow-primary/20 hover:bg-accent transition-colors disabled:opacity-50"
               >
                 {passwordForm.formState.isSubmitting ? "Changing…" : "Change password"}
               </button>

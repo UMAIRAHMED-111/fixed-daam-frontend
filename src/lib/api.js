@@ -38,7 +38,7 @@ api.interceptors.response.use(
 
       try {
         // Refresh sets new HttpOnly accessToken + refreshToken cookies server-side.
-        // No token data needed in JS — the browser handles cookies automatically.
+        // No token data needed in JS, the browser handles cookies automatically.
         await api.post("/v1/auth/refresh-tokens");
         flushQueue(null);
         return api(original);

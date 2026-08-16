@@ -26,7 +26,7 @@ export function PasswordStrengthMeter({ password }) {
     <div className="mt-2 space-y-2">
       {/* Strength bar */}
       <div className="flex items-center gap-2">
-        <div className="flex-1 h-1.5 rounded-full bg-slate-100 overflow-hidden">
+        <div className="flex-1 h-1.5 rounded-full bg-surface-sunken overflow-hidden">
           <div
             className={`h-full rounded-full transition-all duration-300 ${level.barColor}`}
             style={{ width: `${fillPct}%` }}
@@ -45,7 +45,7 @@ export function PasswordStrengthMeter({ password }) {
             <li
               key={rule.key}
               className={`flex items-center gap-1.5 text-xs transition-colors ${
-                met ? "text-green-600" : "text-slate-400"
+                met ? "text-green-600" : "text-muted"
               }`}
             >
               {met ? (

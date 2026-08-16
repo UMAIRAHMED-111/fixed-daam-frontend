@@ -1,9 +1,8 @@
-import { useState, useEffect, useRef } from "react";
-import { useParams, useNavigate, useLocation } from "react-router-dom";
-import { ChevronLeft, ChevronRight, Upload, X, Package, Lock } from "lucide-react";
+import { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { ChevronLeft, ChevronRight, Package, Lock } from "lucide-react";
 import { useInventoryStore } from "@/stores/inventoryStore";
 import { useCartStore } from "@/stores/cartStore";
-import { useOrdersStore } from "@/stores/ordersStore";
 import { useAuthStore } from "@/stores/authStore";
 import { toast } from "sonner";
 import { api } from "@/lib/api";
@@ -14,29 +13,23 @@ import {
 } from "../data/uomData";
 import { pickStockImage } from "../data/categoryImages";
 import { ProductImage } from "../components/ProductImage";
+import { Badge } from "@/components/ui/StatusBadge";
+import { Button } from "@/components/ui/Button";
+import { formatAmount } from "@/lib/money";
 
 export function ProductDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const location = useLocation();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const inventoryProducts = useInventoryStore((s) => s.products);
   const [product, setProduct] = useState(() => inventoryProducts.find((p) => p.id === id) ?? null);
   const [slideIndex, setSlideIndex] = useState(0);
   const [quantity, setQuantity] = useState("1");
-  const [showOrderSuccess, setShowOrderSuccess] = useState(null);
-  const [orderLoading, setOrderLoading] = useState(false);
-  const [paymentFile, setPaymentFile] = useState(null);
-  const [paymentPreview, setPaymentPreview] = useState(null);
-  const fileInputRef = useRef(null);
 
   const addItem = useCartStore((s) => s.addItem);
-  const addOrder = useOrdersStore((s) => s.addOrder);
 
   // Signed-out shoppers browse from the landing page; signed-in ones from the dashboard.
   const backTo = isAuthenticated ? "/dashboard" : "/";
-  /** Send a signed-out shopper to sign in, then straight back to this product. */
-  const goSignIn = () => navigate("/auth", { state: { from: location } });
 
   // If product not found in local store, fetch it directly from the API
   useEffect(() => {
@@ -59,7 +52,7 @@ export function ProductDetailPage() {
   if (!product) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center px-4 gap-3">
-        <p className="text-slate-600">Product not found.</p>
+        <p className="text-body">Product not found.</p>
         <button
           type="button"
           onClick={() => navigate(backTo)}
@@ -91,77 +84,24 @@ export function ProductDetailPage() {
     toast.success("Added to cart");
   };
 
-  const handleFileChange = (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setPaymentFile(file);
-    setPaymentPreview(URL.createObjectURL(file));
-  };
-
-  const handleBuyNow = async () => {
-    if (!paymentFile) {
-      toast.error("Please upload your proof of payment before placing the order.");
-      return;
-    }
+  /** Straight to checkout with just this item, delivery and payment live there. */
+  const handleBuyNow = () => {
     const qty = parseQty();
     if (qty <= 0) {
       toast.error("Enter a valid quantity");
       return;
     }
-    setOrderLoading(true);
-    try {
-      const order = await addOrder(
-        [{ productId: product.id, quantity: qty }],
-        paymentFile
-      );
-      setShowOrderSuccess(order);
-      toast.success("Order placed! Your price is locked.");
-    } catch (err) {
-      toast.error(err.response?.data?.message || "Failed to place order. Please try again.");
-    } finally {
-      setOrderLoading(false);
-    }
+    addItem(product, qty);
+    navigate("/checkout?stage=customer");
   };
 
-  if (showOrderSuccess) {
-    return (
-      <div className="mx-auto max-w-lg px-4 py-12">
-        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-lg text-center">
-          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-amber-100">
-            <span className="text-3xl">⏳</span>
-          </div>
-          <h2 className="text-xl font-bold text-slate-900">Order submitted!</h2>
-          <p className="mt-2 text-slate-600">
-            Your payment proof is under review. We'll notify you once it's verified (usually within 2–3 hours). Your price is locked in.
-          </p>
-          <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
-            <button
-              type="button"
-              onClick={() => navigate("/dashboard/orders")}
-              className="min-h-[48px] rounded-2xl bg-primary px-6 font-semibold text-white shadow-lg shadow-primary/25 hover:shadow-primary/35 hover:bg-orange-600 transition-all"
-            >
-              View my orders
-            </button>
-            <button
-              type="button"
-              onClick={() => { setShowOrderSuccess(null); navigate("/dashboard"); }}
-              className="min-h-[48px] rounded-2xl border-2 border-slate-200 px-6 font-medium text-slate-700 hover:bg-slate-50 transition-all"
-            >
-              Continue shopping
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-[calc(100vh-4rem)] bg-slate-50">
+    <div className="min-h-[calc(100vh-4rem)] bg-background">
       <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
         <button
           type="button"
           onClick={() => navigate(backTo)}
-          className="mb-4 min-h-[44px] -ml-1 inline-flex items-center gap-2 rounded-lg pl-1 pr-3 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900 touch-manipulation"
+          className="mb-4 min-h-[44px] -ml-1 inline-flex items-center gap-2 rounded-lg pl-1 pr-3 py-2.5 text-sm font-medium text-body hover:bg-surface-sunken hover:text-foreground touch-manipulation"
         >
           <ChevronLeft className="h-5 w-5 shrink-0" aria-hidden />
           Back to products
@@ -169,7 +109,7 @@ export function ProductDetailPage() {
         <div className="flex flex-col gap-8 lg:flex-row lg:gap-12">
           {/* Slideshow */}
           <div className="flex-1">
-            <div className="relative aspect-square max-w-lg overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+            <div className="relative aspect-square max-w-lg overflow-hidden rounded-2xl border border-border bg-surface shadow-sm">
               {product.images?.length ? (
                 <img
                   src={images[slideIndex]}
@@ -189,18 +129,18 @@ export function ProductDetailPage() {
                   <button
                     type="button"
                     onClick={goPrev}
-                    className="absolute left-2 top-1/2 -translate-y-1/2 flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full bg-white/90 p-2 shadow hover:bg-white touch-manipulation"
+                    className="absolute left-2 top-1/2 -translate-y-1/2 flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full bg-surface/90 p-2 shadow hover:bg-surface touch-manipulation"
                     aria-label="Previous image"
                   >
-                    <ChevronLeft className="h-6 w-6 text-slate-700" />
+                    <ChevronLeft className="h-6 w-6 text-body" />
                   </button>
                   <button
                     type="button"
                     onClick={goNext}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full bg-white/90 p-2 shadow hover:bg-white touch-manipulation"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full bg-surface/90 p-2 shadow hover:bg-surface touch-manipulation"
                     aria-label="Next image"
                   >
-                    <ChevronRight className="h-6 w-6 text-slate-700" />
+                    <ChevronRight className="h-6 w-6 text-body" />
                   </button>
                   <div className="absolute bottom-2 left-1/2 flex -translate-x-1/2 gap-1.5">
                     {images.map((_, i) => (
@@ -211,7 +151,7 @@ export function ProductDetailPage() {
                         className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full p-2 -m-2 transition-colors touch-manipulation"
                         aria-label={`Go to image ${i + 1}`}
                       >
-                        <span className={`h-2 w-2 rounded-full block ${i === slideIndex ? "bg-primary" : "bg-slate-400"}`} />
+                        <span className={`h-2 w-2 rounded-full block ${i === slideIndex ? "bg-primary" : "bg-border-strong"}`} />
                       </button>
                     ))}
                   </div>
@@ -222,50 +162,65 @@ export function ProductDetailPage() {
           {/* Info + actions */}
           <div className="flex-1 max-w-lg">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="text-sm font-medium text-primary">{product.category}</span>
+              <span className="text-2xs font-semibold uppercase tracking-wide text-muted">
+                {product.category}
+              </span>
               {isBundle ? (
-                <span className="inline-flex items-center gap-1 rounded-full bg-violet-100 px-2.5 py-0.5 text-xs font-semibold text-violet-700">
-                  <Package className="h-3 w-3" />
+                <Badge tone="brand" size="sm">
+                  <Package className="h-3 w-3" aria-hidden />
                   {product.bundleLabel?.trim() || "Bundle"}
-                </span>
+                </Badge>
               ) : product.uom && product.uom !== "each" ? (
-                <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-700">
-                  Sold per {uomDef.short}
-                </span>
+                <Badge tone="neutral" size="sm">Sold per {uomDef.short}</Badge>
               ) : null}
             </div>
-            <h1 className="mt-1 text-2xl font-bold text-slate-900 sm:text-3xl">{product.name}</h1>
-            <p className="mt-2 text-slate-600">{product.description}</p>
-            <p className="mt-4 text-2xl font-bold text-slate-900">
-              PKR {Number(product.price).toFixed(2)}
-              {priceSuffix && (
-                <span className="ml-1 text-sm font-medium text-slate-500">
-                  {priceSuffix}
-                </span>
-              )}
+
+            <h1 className="mt-2 text-3xl font-extrabold tracking-[-0.025em] text-foreground sm:text-4xl">
+              {product.name}
+            </h1>
+            <p className="mt-1.5 text-sm text-muted">
+              Sold by <span className="font-medium text-body">{product.merchantName ?? "Store"}</span>
             </p>
-            <p className="mt-1 text-sm text-slate-500">Sold by {product.merchantName ?? "Store"}</p>
+            {product.description && (
+              <p className="mt-4 max-w-[60ch] leading-relaxed text-body">{product.description}</p>
+            )}
+
+            {/* Price is the content on this page, give it the weight. */}
+            <div className="mt-6 border-y border-border py-5">
+              <p className="tnum text-4xl font-extrabold leading-none tracking-[-0.03em] text-foreground">
+                <span className="mr-1.5 align-top text-base font-bold text-muted">PKR</span>
+                {formatAmount(product.price)}
+              </p>
+              {priceSuffix && (
+                <p className="mt-2 text-sm text-muted">
+                  per {priceSuffix.replace(/^\//, "")}
+                </p>
+              )}
+              <p className="mt-3 flex items-start gap-2 text-sm text-body">
+                <Lock className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" aria-hidden />
+                This price is locked the moment you check out, collect whenever
+                you&apos;re ready, in as many visits as you like.
+              </p>
+            </div>
 
             {/* Bundle composition */}
             {isBundle && product.bundleSize && innerUom && (
-              <div className="mt-4 rounded-xl border border-violet-200 bg-violet-50/50 px-4 py-3">
-                <p className="flex items-center gap-2 text-sm font-semibold text-violet-800">
-                  <Package className="h-4 w-4" />
-                  What's in each {product.bundleLabel?.trim() || "bundle"}
+              <div className="mt-5 rounded-xl bg-primary-soft px-4 py-3 ring-1 ring-inset ring-primary/15">
+                <p className="flex items-center gap-2 text-sm font-semibold text-primary-ink">
+                  <Package className="h-4 w-4" aria-hidden />
+                  What&apos;s in each {product.bundleLabel?.trim() || "bundle"}
                 </p>
-                <p className="mt-1 text-sm text-violet-700">
-                  <strong>{product.bundleSize}</strong> × {innerUom.short}
-                  <span className="ml-1 text-violet-600/80">
-                    (i.e. {(product.bundleSize).toLocaleString()} {innerUom.short} per {product.bundleLabel?.trim() || "bundle"})
-                  </span>
+                <p className="tnum mt-1 text-sm text-body">
+                  {product.bundleSize.toLocaleString()} × {innerUom.short} per{" "}
+                  {product.bundleLabel?.trim() || "bundle"}
                 </p>
               </div>
             )}
 
             {/* Quantity */}
             <div className="mt-6">
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                Quantity {!uomDef.integer && <span className="text-xs font-normal text-slate-500">(in {uomDef.short})</span>}
+              <label className="block text-sm font-medium text-body mb-1.5">
+                Quantity {!uomDef.integer && <span className="text-xs font-normal text-muted">(in {uomDef.short})</span>}
               </label>
               <div className="flex flex-wrap items-center gap-3">
                 <input
@@ -285,9 +240,9 @@ export function ProductDetailPage() {
                     const clamped = Math.min(product.stock, n);
                     setQuantity(uomDef.integer ? String(Math.max(1, Math.floor(clamped))) : String(clamped));
                   }}
-                  className="w-28 min-h-[44px] rounded-lg border border-slate-200 px-3 py-2 text-center text-base focus:outline-none focus:ring-2 focus:ring-primary touch-manipulation"
+                  className="w-28 min-h-[44px] rounded-lg border border-border px-3 py-2 text-center text-base focus:outline-none focus:ring-2 focus:ring-primary touch-manipulation"
                 />
-                <span className="text-sm text-slate-500">
+                <span className="text-sm text-muted">
                   {isBundle
                     ? (qtyParsed === 1
                         ? (product.bundleLabel?.trim() || "bundle")
@@ -295,15 +250,15 @@ export function ProductDetailPage() {
                     : (uomDef.value === "each"
                         ? (qtyParsed === 1 ? "unit" : "units")
                         : uomDef.short)}
-                  <span className="text-slate-400"> · {Number(product.stock).toLocaleString()} in stock</span>
+                  <span className="text-muted"> · {Number(product.stock).toLocaleString()} in stock</span>
                 </span>
               </div>
               {qtyParsed > 0 && (
-                <p className="mt-2 text-sm text-slate-700">
+                <p className="mt-2 text-sm text-body">
                   {isBundle && product.bundleSize && innerUom ? (
                     <>
                       = {formatQuantity(qtyParsed, product)} ·{" "}
-                      <span className="text-slate-500">
+                      <span className="text-muted">
                         contains {(qtyParsed * product.bundleSize).toLocaleString()} {innerUom.short} total
                       </span>
                     </>
@@ -312,104 +267,28 @@ export function ProductDetailPage() {
                   )}
                 </p>
               )}
-              <p className="mt-2 text-base font-semibold text-slate-900">
-                Order total:{" "}
-                <span className="text-primary">
-                  PKR {previewTotal.toFixed(2)}
-                </span>
+              <p className="tnum mt-3 flex items-baseline justify-between border-t border-border pt-3 text-base font-semibold text-foreground">
+                <span>Order total</span>
+                <span className="text-lg">PKR {formatAmount(previewTotal)}</span>
               </p>
             </div>
-            {/* bank account to send payment to . the payment will be sent to fixeddaam admin */}
-            <div className="mt-6 rounded-lg border border-slate-200 bg-slate-50 p-4">
-              <p className="text-sm font-medium text-slate-700 mb-2">Send payment to:</p>
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-200 text-slate-700 font-medium">
-                  <span>DB</span>
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-slate-900">Bank Name: DBBL</p>
-                  <p className="text-sm text-slate-600">Account: XXXXXXXXXXXXXXXX</p>
-                  <p className="text-sm text-slate-600">Branch: Gulshan</p>
-                  <p className="text-sm text-slate-600">Account Name: FixedDaam Ltd.</p>
-                  <p className="text-sm text-slate-600">IBAN: PKXXXXXXXXXXXXXXXXXXXXXXXX</p>
-                </div>
-              </div>
-            </div>
-            {/* Payment proof — only meaningful once signed in, since the order is
-                tied to an account. Signed-out shoppers get a sign-in prompt below. */}
-            <div className={`mt-6 ${isAuthenticated ? "" : "hidden"}`}>
-              <p className="text-sm font-medium text-slate-700 mb-2">
-                Proof of payment <span className="text-red-500">*</span>
-                <span className="ml-1 text-xs font-normal text-slate-500">(required to place order)</span>
-              </p>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={handleFileChange}
-              />
-              {paymentPreview ? (
-                <div className="relative inline-block">
-                  <img
-                    src={paymentPreview}
-                    alt="Payment proof preview"
-                    className="max-h-40 max-w-full rounded-xl border border-slate-200 object-contain bg-slate-50"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => { setPaymentFile(null); setPaymentPreview(null); fileInputRef.current.value = ""; }}
-                    className="absolute top-1 right-1 flex h-7 w-7 items-center justify-center rounded-full bg-white shadow text-slate-500 hover:text-red-600"
-                    aria-label="Remove proof"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
-                </div>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-300 py-4 text-sm font-medium text-slate-500 hover:border-primary hover:text-primary transition-colors"
-                >
-                  <Upload className="h-4 w-4" />
-                  Upload payment screenshot
-                </button>
-              )}
-            </div>
-            <div className="mt-4 flex flex-col gap-3 sm:flex-row">
-              <button
-                type="button"
-                onClick={handleAddToCart}
-                className="min-h-[52px] flex-1 rounded-2xl border-2 border-slate-200 font-semibold text-slate-700 hover:bg-slate-50 transition-all"
-              >
+
+            <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+              <Button variant="secondary" size="lg" className="flex-1" onClick={handleAddToCart}>
                 Add to cart
-              </button>
-              {isAuthenticated ? (
-                <button
-                  type="button"
-                  onClick={handleBuyNow}
-                  disabled={orderLoading || !paymentFile}
-                  className="min-h-[52px] flex-1 rounded-2xl bg-primary font-semibold text-white shadow-lg shadow-primary/25 hover:shadow-primary/35 hover:bg-orange-600 transition-all disabled:opacity-50"
-                >
-                  {orderLoading ? "Placing order…" : "Buy now — lock price"}
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  onClick={goSignIn}
-                  className="min-h-[52px] flex-1 inline-flex items-center justify-center gap-2 rounded-2xl bg-primary font-semibold text-white shadow-lg shadow-primary/25 hover:shadow-primary/35 hover:bg-orange-600 transition-all"
-                >
-                  <Lock className="h-4 w-4" aria-hidden />
-                  Sign in to buy
-                </button>
-              )}
+              </Button>
+              <Button
+                size="lg"
+                className="flex-1"
+                onClick={handleBuyNow}
+                disabled={Number(product.stock) <= 0}
+              >
+                {Number(product.stock) > 0 ? "Buy now and lock the price" : "Out of stock"}
+              </Button>
             </div>
-            {!isAuthenticated && (
-              <p className="mt-3 text-center text-sm text-slate-500 sm:text-left">
-                Your cart is saved — sign in when you&apos;re ready and we&apos;ll bring you
-                right back here.
-              </p>
-            )}
+            <p className="mt-3 text-center text-sm text-muted sm:text-left">
+              Delivery and payment are handled at checkout.
+            </p>
           </div>
         </div>
       </div>

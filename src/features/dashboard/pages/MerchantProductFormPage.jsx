@@ -84,7 +84,7 @@ export function MerchantProductFormPage() {
   if (isEdit && !product) {
     return (
       <div className="mx-auto max-w-lg px-4 py-12">
-        <p className="text-slate-600">Product not found.</p>
+        <p className="text-body">Product not found.</p>
         <button
           type="button"
           onClick={() => navigate("/dashboard/inventory")}
@@ -166,22 +166,22 @@ export function MerchantProductFormPage() {
   };
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] bg-slate-50">
+    <div className="min-h-[calc(100vh-4rem)] bg-background">
       <div className="mx-auto max-w-xl px-4 py-6 sm:px-6 lg:px-8">
         <button
           type="button"
           onClick={() => navigate("/dashboard/inventory")}
-          className="mb-4 min-h-[44px] -ml-1 inline-flex items-center gap-2 rounded-lg pl-1 pr-3 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900 touch-manipulation"
+          className="mb-4 min-h-[44px] -ml-1 inline-flex items-center gap-2 rounded-lg pl-1 pr-3 py-2.5 text-sm font-medium text-body hover:bg-surface-sunken hover:text-foreground touch-manipulation"
         >
           <ChevronLeft className="h-5 w-5 shrink-0" aria-hidden />
           Back to inventory
         </button>
-        <h1 className="text-2xl font-bold text-slate-900">
+        <h1 className="text-2xl font-bold text-foreground">
           {isEdit ? "Edit product" : "Add product"}
         </h1>
         <form
           onSubmit={form.handleSubmit(onSubmit)}
-          className="mt-6 space-y-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
+          className="mt-6 space-y-4 rounded-2xl border border-border bg-surface p-6 shadow-sm"
         >
           <FormField
             label="Product name"
@@ -215,7 +215,7 @@ export function MerchantProductFormPage() {
             id="category"
           >
             <select
-              className="w-full min-h-[44px] rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-base text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary touch-manipulation"
+              className="w-full min-h-[44px] rounded-lg border border-border bg-surface px-3 py-2.5 text-base text-foreground focus:outline-none focus:ring-2 focus:ring-primary touch-manipulation"
               {...form.register("category")}
             >
               <option value="">Select category</option>
@@ -235,7 +235,7 @@ export function MerchantProductFormPage() {
             id="uom"
           >
             <select
-              className="w-full min-h-[44px] rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-base text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary touch-manipulation"
+              className="w-full min-h-[44px] rounded-lg border border-border bg-surface px-3 py-2.5 text-base text-foreground focus:outline-none focus:ring-2 focus:ring-primary touch-manipulation"
               {...form.register("uom")}
             >
               {UOM_OPTIONS.map((u) => (
@@ -244,8 +244,8 @@ export function MerchantProductFormPage() {
                 </option>
               ))}
             </select>
-            <p className="mt-1.5 text-xs text-slate-500">
-              How customers buy this — by piece, by weight, or as a bundle.
+            <p className="mt-1.5 text-xs text-muted">
+              How customers buy this, by piece, by weight, or as a bundle.
             </p>
           </FormField>
 
@@ -280,7 +280,7 @@ export function MerchantProductFormPage() {
                   id="bundleUom"
                 >
                   <select
-                    className="w-full min-h-[44px] rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-base text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary touch-manipulation"
+                    className="w-full min-h-[44px] rounded-lg border border-border bg-surface px-3 py-2.5 text-base text-foreground focus:outline-none focus:ring-2 focus:ring-primary touch-manipulation"
                     {...form.register("bundleUom")}
                   >
                     <option value="">Select base unit</option>
@@ -302,13 +302,13 @@ export function MerchantProductFormPage() {
                   placeholder="e.g. case, sack, carton, pack"
                   {...form.register("bundleLabel")}
                 />
-                <p className="mt-1.5 text-xs text-slate-500">
+                <p className="mt-1.5 text-xs text-muted">
                   Shown to buyers. Defaults to "bundle" if left blank.
                 </p>
               </FormField>
 
               {bundleSize && innerUomDef && (
-                <div className="rounded-lg bg-white border border-violet-200 px-3 py-2 text-xs text-violet-800">
+                <div className="rounded-lg bg-surface border border-violet-200 px-3 py-2 text-xs text-violet-800">
                   Each {bundleLabel?.trim() || "bundle"} contains{" "}
                   <strong>
                     {bundleSize} × {innerUomDef.short}
@@ -353,7 +353,7 @@ export function MerchantProductFormPage() {
                   }`}
                 >
                   <strong>{reserved}</strong> {uomDef.short} currently reserved by
-                  in-flight orders. The number above is what's available to sell now —
+                  in-flight orders. The number above is what's available to sell now -
                   reserved units are tracked separately and won't be affected by edits here.
                 </p>
               )}
@@ -363,12 +363,12 @@ export function MerchantProductFormPage() {
           {/* Images */}
           <div>
             <div className="mb-2 flex items-center justify-between">
-              <span className="text-sm font-medium text-slate-700">Images</span>
+              <span className="text-sm font-medium text-body">Images</span>
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={uploading}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 hover:border-slate-300 transition-colors disabled:opacity-50 touch-manipulation"
+                className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-xs font-medium text-body hover:bg-background hover:border-border-strong transition-colors disabled:opacity-50 touch-manipulation"
               >
                 <Upload className="h-3.5 w-3.5" aria-hidden />
                 {uploading ? "Uploading…" : "Upload from device"}
@@ -387,7 +387,7 @@ export function MerchantProductFormPage() {
                 {images.map((url, i) => (
                   <div
                     key={url}
-                    className="group relative aspect-square overflow-hidden rounded-xl border border-slate-200 bg-slate-100"
+                    className="group relative aspect-square overflow-hidden rounded-xl border border-border bg-surface-sunken"
                   >
                     <img src={url} alt="" className="h-full w-full object-cover" />
                     <button
@@ -404,7 +404,7 @@ export function MerchantProductFormPage() {
             ) : (
               <div
                 onClick={() => fileInputRef.current?.click()}
-                className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 py-8 text-slate-400 hover:border-primary hover:text-primary transition-colors"
+                className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-border bg-background py-8 text-muted hover:border-primary hover:text-primary transition-colors"
               >
                 <Upload className="h-6 w-6" aria-hidden />
                 <p className="text-sm">Click to upload images</p>
@@ -416,7 +416,7 @@ export function MerchantProductFormPage() {
             <button
               type="submit"
               disabled={form.formState.isSubmitting || uploading}
-              className="min-h-[48px] flex-1 rounded-2xl bg-primary font-semibold text-white shadow-lg shadow-primary/25 hover:shadow-primary/35 hover:bg-orange-600 transition-all touch-manipulation disabled:opacity-50"
+              className="min-h-[48px] flex-1 rounded-2xl bg-primary font-semibold text-white shadow-lg shadow-primary/25 hover:shadow-primary/35 hover:bg-accent transition-all touch-manipulation disabled:opacity-50"
             >
               {form.formState.isSubmitting
                 ? "Saving…"
@@ -427,7 +427,7 @@ export function MerchantProductFormPage() {
             <button
               type="button"
               onClick={() => navigate("/dashboard/inventory")}
-              className="min-h-[48px] rounded-2xl border-2 border-slate-200 px-6 font-medium text-slate-700 hover:bg-slate-50 transition-all touch-manipulation"
+              className="min-h-[48px] rounded-2xl border-2 border-border px-6 font-medium text-body hover:bg-background transition-all touch-manipulation"
             >
               Cancel
             </button>

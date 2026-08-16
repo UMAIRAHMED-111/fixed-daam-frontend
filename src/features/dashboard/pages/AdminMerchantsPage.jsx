@@ -16,6 +16,7 @@ import { useAuthStore } from "@/stores/authStore";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
 import { formatQuantity } from "../data/uomData";
+import { formatAmount } from "@/lib/money";
 
 const STATUS_LABEL = {
   pending_verification: "Pending",
@@ -29,13 +30,13 @@ const STATUS_BADGE = {
   pending_verification: "bg-amber-100 text-amber-700",
   locked: "bg-blue-100 text-blue-800",
   ready: "bg-emerald-100 text-emerald-800",
-  delivered: "bg-slate-100 text-slate-600",
+  delivered: "bg-surface-sunken text-body",
   rejected: "bg-red-100 text-red-700",
 };
 
 function StatPill({ Icon, value, label, tone = "slate" }) {
   const tones = {
-    slate: "bg-slate-50 text-slate-700",
+    slate: "bg-background text-body",
     primary: "bg-primary/10 text-primary",
     emerald: "bg-emerald-50 text-emerald-700",
     blue: "bg-blue-50 text-blue-700",
@@ -76,7 +77,7 @@ function MerchantDetail({ merchantId }) {
 
   if (loading) {
     return (
-      <div className="px-5 py-4 text-sm text-slate-500">Loading details…</div>
+      <div className="px-5 py-4 text-sm text-muted">Loading details…</div>
     );
   }
   if (!data) return null;
@@ -84,19 +85,19 @@ function MerchantDetail({ merchantId }) {
   const { products, orders } = data;
 
   return (
-    <div className="border-t border-slate-100 bg-slate-50/50 px-5 py-5 space-y-6">
+    <div className="border-t border-border bg-slate-50/50 px-5 py-5 space-y-6">
       {/* Products */}
       <div>
-        <h4 className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-700">
+        <h4 className="mb-3 flex items-center gap-2 text-sm font-semibold text-body">
           <Package className="h-4 w-4 text-primary" />
           Products ({products.length})
         </h4>
         {products.length === 0 ? (
-          <p className="text-xs text-slate-500">No products yet.</p>
+          <p className="text-xs text-muted">No products yet.</p>
         ) : (
-          <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
+          <div className="overflow-x-auto rounded-xl border border-border bg-surface">
             <table className="min-w-full text-sm">
-              <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+              <thead className="bg-background text-xs uppercase tracking-wide text-muted">
                 <tr>
                   <th className="px-3 py-2 text-left font-medium">Name</th>
                   <th className="px-3 py-2 text-left font-medium">Category</th>
@@ -108,14 +109,14 @@ function MerchantDetail({ merchantId }) {
               <tbody className="divide-y divide-slate-100">
                 {products.map((p) => (
                   <tr key={p.id}>
-                    <td className="px-3 py-2 font-medium text-slate-800">
+                    <td className="px-3 py-2 font-medium text-foreground">
                       {p.name}
                     </td>
-                    <td className="px-3 py-2 text-slate-600">{p.category}</td>
-                    <td className="px-3 py-2 text-right text-slate-700">
-                      PKR {Number(p.price).toFixed(2)}
+                    <td className="px-3 py-2 text-body">{p.category}</td>
+                    <td className="px-3 py-2 text-right text-body">
+                      PKR {formatAmount(p.price)}
                     </td>
-                    <td className="px-3 py-2 text-right text-slate-700">
+                    <td className="px-3 py-2 text-right text-body">
                       {p.stock}
                     </td>
                     <td className="px-3 py-2 text-center">
@@ -123,7 +124,7 @@ function MerchantDetail({ merchantId }) {
                         className={`rounded-full px-2 py-0.5 text-xs font-medium ${
                           p.isActive
                             ? "bg-emerald-100 text-emerald-700"
-                            : "bg-slate-100 text-slate-500"
+                            : "bg-surface-sunken text-muted"
                         }`}
                       >
                         {p.isActive ? "Active" : "Inactive"}
@@ -139,18 +140,18 @@ function MerchantDetail({ merchantId }) {
 
       {/* Orders */}
       <div>
-        <h4 className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-700">
+        <h4 className="mb-3 flex items-center gap-2 text-sm font-semibold text-body">
           <ShoppingBag className="h-4 w-4 text-primary" />
           Orders ({orders.length})
         </h4>
         {orders.length === 0 ? (
-          <p className="text-xs text-slate-500">No orders for this merchant yet.</p>
+          <p className="text-xs text-muted">No orders for this merchant yet.</p>
         ) : (
           <ul className="space-y-2">
             {orders.map((o) => (
               <li
                 key={o.id}
-                className="rounded-xl border border-slate-200 bg-white px-4 py-3"
+                className="rounded-xl border border-border bg-surface px-4 py-3"
               >
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="flex flex-wrap items-center gap-2">
@@ -161,41 +162,41 @@ function MerchantDetail({ merchantId }) {
                     >
                       {STATUS_LABEL[o.status] ?? o.status}
                     </span>
-                    <span className="font-mono text-xs text-slate-400">
+                    <span className="font-mono text-xs text-muted">
                       #{o.id.slice(-8).toUpperCase()}
                     </span>
                   </div>
-                  <span className="text-xs text-slate-500">
+                  <span className="text-xs text-muted">
                     {new Date(o.createdAt).toLocaleString(undefined, {
                       dateStyle: "medium",
                       timeStyle: "short",
                     })}
                   </span>
                 </div>
-                <p className="mt-1.5 text-xs text-slate-600">
+                <p className="mt-1.5 text-xs text-body">
                   Buyer:{" "}
-                  <span className="font-medium text-slate-800">
-                    {o.buyerName || o.buyerEmail || "—"}
+                  <span className="font-medium text-foreground">
+                    {o.buyerName || o.buyerEmail || "-"}
                   </span>
                   {o.buyerEmail && o.buyerName && (
-                    <span className="text-slate-400"> ({o.buyerEmail})</span>
+                    <span className="text-muted"> ({o.buyerEmail})</span>
                   )}
                 </p>
                 <ul className="mt-2 space-y-0.5">
                   {o.items.map((it, idx) => (
                     <li
                       key={idx}
-                      className="flex items-center justify-between text-xs text-slate-600"
+                      className="flex items-center justify-between text-xs text-body"
                     >
                       <span>
                         {it.name} · {formatQuantity(it.quantity, it)}
                       </span>
-                      <span>PKR {(it.price * it.quantity).toFixed(2)}</span>
+                      <span>PKR {formatAmount(it.price * it.quantity)}</span>
                     </li>
                   ))}
                 </ul>
-                <p className="mt-2 text-right text-xs font-semibold text-slate-900">
-                  Subtotal: PKR {Number(o.merchantSubtotal).toFixed(2)}
+                <p className="mt-2 text-right text-xs font-semibold text-foreground">
+                  Subtotal: PKR {formatAmount(o.merchantSubtotal)}
                 </p>
               </li>
             ))}
@@ -246,44 +247,44 @@ export function AdminMerchantsPage() {
   );
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] bg-slate-50">
+    <div className="min-h-[calc(100vh-4rem)] bg-background">
       <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6 lg:px-8">
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-slate-900">Merchants</h1>
-          <p className="mt-1 text-sm text-slate-600">
+          <h1 className="text-2xl font-bold text-foreground">Merchants</h1>
+          <p className="mt-1 text-sm text-body">
             All registered merchants with their products and orders.
           </p>
         </div>
 
         {/* Top stats */}
         <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="rounded-2xl border border-border bg-surface p-4 shadow-sm">
             <Store className="mb-2 h-5 w-5 text-violet-500" />
-            <p className="text-2xl font-bold text-slate-900 leading-none">
+            <p className="text-2xl font-bold text-foreground leading-none">
               {totals.merchants}
             </p>
-            <p className="mt-1 text-xs font-medium text-slate-500">Merchants</p>
+            <p className="mt-1 text-xs font-medium text-muted">Merchants</p>
           </div>
-          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="rounded-2xl border border-border bg-surface p-4 shadow-sm">
             <Package className="mb-2 h-5 w-5 text-blue-500" />
-            <p className="text-2xl font-bold text-slate-900 leading-none">
+            <p className="text-2xl font-bold text-foreground leading-none">
               {totals.products}
             </p>
-            <p className="mt-1 text-xs font-medium text-slate-500">Products</p>
+            <p className="mt-1 text-xs font-medium text-muted">Products</p>
           </div>
-          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="rounded-2xl border border-border bg-surface p-4 shadow-sm">
             <ShoppingBag className="mb-2 h-5 w-5 text-amber-500" />
-            <p className="text-2xl font-bold text-slate-900 leading-none">
+            <p className="text-2xl font-bold text-foreground leading-none">
               {totals.orders}
             </p>
-            <p className="mt-1 text-xs font-medium text-slate-500">Orders</p>
+            <p className="mt-1 text-xs font-medium text-muted">Orders</p>
           </div>
-          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="rounded-2xl border border-border bg-surface p-4 shadow-sm">
             <TrendingUp className="mb-2 h-5 w-5 text-emerald-500" />
-            <p className="text-2xl font-bold text-slate-900 leading-none">
+            <p className="text-2xl font-bold text-foreground leading-none">
               PKR {Number(totals.revenue).toFixed(0)}
             </p>
-            <p className="mt-1 text-xs font-medium text-slate-500">
+            <p className="mt-1 text-xs font-medium text-muted">
               Delivered revenue
             </p>
           </div>
@@ -292,7 +293,7 @@ export function AdminMerchantsPage() {
         {/* Search */}
         <div className="relative mb-4">
           <Search
-            className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
+            className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted"
             aria-hidden
           />
           <input
@@ -300,19 +301,19 @@ export function AdminMerchantsPage() {
             placeholder="Search merchants by name, email or phone…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full min-h-[44px] rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-4 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary touch-manipulation"
+            className="w-full min-h-[44px] rounded-xl border border-border bg-surface py-2.5 pl-10 pr-4 text-sm text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary touch-manipulation"
           />
         </div>
 
         {/* List */}
         {loading && merchants.length === 0 ? (
-          <div className="rounded-2xl border border-slate-200 bg-white p-12 text-center">
-            <p className="text-sm text-slate-500">Loading merchants…</p>
+          <div className="rounded-2xl border border-border bg-surface p-12 text-center">
+            <p className="text-sm text-muted">Loading merchants…</p>
           </div>
         ) : filtered.length === 0 ? (
-          <div className="rounded-2xl border border-slate-200 bg-white p-12 text-center">
+          <div className="rounded-2xl border border-border bg-surface p-12 text-center">
             <Store className="mx-auto mb-3 h-10 w-10 text-slate-300" aria-hidden />
-            <p className="font-medium text-slate-700">
+            <p className="font-medium text-body">
               {merchants.length === 0
                 ? "No merchants yet"
                 : "No merchants match your search"}
@@ -325,19 +326,19 @@ export function AdminMerchantsPage() {
               return (
                 <li
                   key={m.id}
-                  className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"
+                  className="overflow-hidden rounded-2xl border border-border bg-surface shadow-sm"
                 >
                   <button
                     type="button"
                     onClick={() => setExpandedId(isOpen ? null : m.id)}
-                    className="flex w-full items-start gap-4 p-5 text-left transition-colors hover:bg-slate-50"
+                    className="flex w-full items-start gap-4 p-5 text-left transition-colors hover:bg-background"
                   >
                     <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-violet-100 text-base font-bold text-violet-700">
                       {m.name?.[0]?.toUpperCase() ?? "M"}
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
-                        <h3 className="text-base font-semibold text-slate-900 truncate">
+                        <h3 className="text-base font-semibold text-foreground truncate">
                           {m.name}
                         </h3>
                         {m.isEmailVerified && (
@@ -350,7 +351,7 @@ export function AdminMerchantsPage() {
                           </span>
                         )}
                       </div>
-                      <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500">
+                      <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted">
                         <span className="inline-flex items-center gap-1">
                           <Mail className="h-3 w-3" />
                           {m.email}
@@ -391,7 +392,7 @@ export function AdminMerchantsPage() {
                         />
                       </div>
                     </div>
-                    <div className="shrink-0 self-center text-slate-400">
+                    <div className="shrink-0 self-center text-muted">
                       {isOpen ? (
                         <ChevronUp className="h-5 w-5" />
                       ) : (

@@ -41,8 +41,8 @@ export function MerchantSectionsView({ search, category, priceMin, priceMax }) {
 
   if (merchantSections.length === 0) {
     return (
-      <div className="rounded-2xl border border-slate-200 bg-white p-12 text-center">
-        <p className="text-slate-600">No products match your filters.</p>
+      <div className="rounded-2xl border border-border bg-surface p-12 text-center">
+        <p className="text-body">No products match your filters.</p>
       </div>
     );
   }
@@ -52,18 +52,18 @@ export function MerchantSectionsView({ search, category, priceMin, priceMax }) {
       {merchantSections.map((merchant) => (
         <section key={merchant.name} aria-labelledby={`merchant-${merchant.name}`}>
           {/* Merchant header */}
-          <div className="mb-5 flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+          <div className="mb-5 flex items-center gap-3 rounded-2xl border border-border bg-surface px-4 py-3 shadow-sm">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">
               <Store className="h-5 w-5 text-primary" aria-hidden />
             </div>
             <div>
               <h2
                 id={`merchant-${merchant.name}`}
-                className="font-bold text-slate-900"
+                className="font-bold text-foreground"
               >
                 {merchant.name}
               </h2>
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-muted">
                 {merchant.products.length}{" "}
                 {merchant.products.length === 1 ? "product" : "products"} available
               </p>
