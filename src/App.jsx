@@ -24,6 +24,8 @@ export default function App() {
         <Route path="/auth" element={<AuthPage />} />
         <Route path="/admin" element={<AdminLoginPage />} />
         <Route path="/verify-email" element={<VerifyEmailPage />} />
+        {/* Public storefront product page — browsing needs no account */}
+        <Route path="/product/:id" element={<ProductDetailPage />} />
         <Route
           path="/dashboard"
           element={

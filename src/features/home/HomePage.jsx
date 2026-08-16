@@ -1,4 +1,5 @@
 import { HeroSection } from "./components/HeroSection";
+import { StorefrontSection } from "./components/StorefrontSection";
 import { HowItWorksSection } from "./components/HowItWorksSection";
 import { ForMerchantsSection } from "./components/ForMerchantsSection";
 import { CtaSection } from "./components/CtaSection";
@@ -8,6 +9,7 @@ export function HomePage() {
   return (
     <>
       <HeroSection />
+      <StorefrontSection />
       <HowItWorksSection />
       <ForMerchantsSection />
       <CtaSection />

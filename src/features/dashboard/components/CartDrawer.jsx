@@ -1,8 +1,9 @@
 import { useState, useRef } from "react";
-import { Link } from "react-router-dom";
-import { X, Upload, Package } from "lucide-react";
+import { Link, useNavigate, useLocation } from "react-router-dom";
+import { X, Upload, Package, Lock } from "lucide-react";
 import { useCartStore } from "@/stores/cartStore";
 import { useOrdersStore } from "@/stores/ordersStore";
+import { useAuthStore } from "@/stores/authStore";
 import { toast } from "sonner";
 import {
   getUom,
@@ -14,6 +15,9 @@ import {
 const DELIVERY_FEE = 100;
 
 export function CartDrawer({ open, onClose }) {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const items = useCartStore((s) => s.items);
   const updateQuantity = useCartStore((s) => s.updateQuantity);
   const removeItem = useCartStore((s) => s.removeItem);
@@ -38,6 +42,12 @@ export function CartDrawer({ open, onClose }) {
     if (!file) return;
     setPaymentFile(file);
     setPaymentPreview(URL.createObjectURL(file));
+  };
+
+  /** Send a signed-out shopper to sign in, then back to where they were shopping. */
+  const handleSignIn = () => {
+    onClose();
+    navigate("/auth", { state: { from: location } });
   };
 
   const handleCheckout = async () => {
@@ -245,8 +255,9 @@ export function CartDrawer({ open, onClose }) {
                 <span>PKR {totalAmount.toFixed(2)}</span>
               </p>
             </div>
-            {/* Payment proof upload */}
-            <div>
+            {/* Payment proof upload — an order belongs to an account, so this step
+                only appears once the shopper is signed in. */}
+            <div className={isAuthenticated ? "" : "hidden"}>
               <p className="text-xs font-medium text-slate-700 mb-2">Proof of payment <span className="text-red-500">*</span></p>
               <input
                 ref={fileInputRef}
@@ -282,14 +293,30 @@ export function CartDrawer({ open, onClose }) {
                 </button>
               )}
             </div>
-            <button
-              type="button"
-              onClick={handleCheckout}
-              disabled={isPlacing || !paymentFile}
-              className="w-full min-h-[52px] rounded-2xl bg-primary font-semibold text-white shadow-lg shadow-primary/25 hover:shadow-primary/35 hover:bg-orange-600 transition-all disabled:opacity-50"
-            >
-              {isPlacing ? "Placing order…" : "Buy now — lock price"}
-            </button>
+            {isAuthenticated ? (
+              <button
+                type="button"
+                onClick={handleCheckout}
+                disabled={isPlacing || !paymentFile}
+                className="w-full min-h-[52px] rounded-2xl bg-primary font-semibold text-white shadow-lg shadow-primary/25 hover:shadow-primary/35 hover:bg-orange-600 transition-all disabled:opacity-50"
+              >
+                {isPlacing ? "Placing order…" : "Buy now — lock price"}
+              </button>
+            ) : (
+              <div className="space-y-2">
+                <button
+                  type="button"
+                  onClick={handleSignIn}
+                  className="flex w-full min-h-[52px] items-center justify-center gap-2 rounded-2xl bg-primary font-semibold text-white shadow-lg shadow-primary/25 hover:shadow-primary/35 hover:bg-orange-600 transition-all"
+                >
+                  <Lock className="h-4 w-4" aria-hidden />
+                  Sign in to check out
+                </button>
+                <p className="text-center text-xs text-slate-500">
+                  Your cart is saved — you&apos;ll come straight back here.
+                </p>
+              </div>
+            )}
           </div>
         )}
         {!checkingOut && items.length > 0 && (

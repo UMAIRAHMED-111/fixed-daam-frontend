@@ -2,15 +2,22 @@ import { Link } from "react-router-dom";
 import { Package } from "lucide-react";
 import { formatUomSuffix, getUom } from "../data/uomData";
 import { ProductImage } from "./ProductImage";
+import { useAuthStore } from "@/stores/authStore";
 
 export function ProductCard({ product }) {
   const isBundle = product.uom === "bundle";
   const innerUom = isBundle && product.bundleUom ? getUom(product.bundleUom) : null;
   const priceSuffix = formatUomSuffix(product);
+  // Signed-out shoppers browse the public product page; signed-in users stay
+  // inside the dashboard shell.
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const href = isAuthenticated
+    ? `/dashboard/product/${product.id}`
+    : `/product/${product.id}`;
 
   return (
     <Link
-      to={`/dashboard/product/${product.id}`}
+      to={href}
       className="group flex flex-col rounded-2xl border border-slate-200 bg-white overflow-hidden shadow-sm hover:shadow-lg hover:border-slate-300 transition-all"
     >
       <div className="relative aspect-square w-full overflow-hidden bg-slate-100">

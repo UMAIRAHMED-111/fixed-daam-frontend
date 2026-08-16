@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import { ChevronLeft, ChevronRight, Upload, X, Package } from "lucide-react";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
+import { ChevronLeft, ChevronRight, Upload, X, Package, Lock } from "lucide-react";
 import { useInventoryStore } from "@/stores/inventoryStore";
 import { useCartStore } from "@/stores/cartStore";
 import { useOrdersStore } from "@/stores/ordersStore";
+import { useAuthStore } from "@/stores/authStore";
 import { toast } from "sonner";
 import { api } from "@/lib/api";
 import {
@@ -17,6 +18,8 @@ import { ProductImage } from "../components/ProductImage";
 export function ProductDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const inventoryProducts = useInventoryStore((s) => s.products);
   const [product, setProduct] = useState(() => inventoryProducts.find((p) => p.id === id) ?? null);
   const [slideIndex, setSlideIndex] = useState(0);
@@ -29,6 +32,11 @@ export function ProductDetailPage() {
 
   const addItem = useCartStore((s) => s.addItem);
   const addOrder = useOrdersStore((s) => s.addOrder);
+
+  // Signed-out shoppers browse from the landing page; signed-in ones from the dashboard.
+  const backTo = isAuthenticated ? "/dashboard" : "/";
+  /** Send a signed-out shopper to sign in, then straight back to this product. */
+  const goSignIn = () => navigate("/auth", { state: { from: location } });
 
   // If product not found in local store, fetch it directly from the API
   useEffect(() => {
@@ -54,7 +62,7 @@ export function ProductDetailPage() {
         <p className="text-slate-600">Product not found.</p>
         <button
           type="button"
-          onClick={() => navigate("/dashboard")}
+          onClick={() => navigate(backTo)}
           className="inline-flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium text-primary hover:bg-primary/10 min-h-[44px] touch-manipulation"
         >
           <ChevronLeft className="h-5 w-5 shrink-0" aria-hidden />
@@ -152,7 +160,7 @@ export function ProductDetailPage() {
       <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
         <button
           type="button"
-          onClick={() => navigate("/dashboard")}
+          onClick={() => navigate(backTo)}
           className="mb-4 min-h-[44px] -ml-1 inline-flex items-center gap-2 rounded-lg pl-1 pr-3 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900 touch-manipulation"
         >
           <ChevronLeft className="h-5 w-5 shrink-0" aria-hidden />
@@ -327,8 +335,9 @@ export function ProductDetailPage() {
                 </div>
               </div>
             </div>
-            {/* Payment proof */}
-            <div className="mt-6">
+            {/* Payment proof — only meaningful once signed in, since the order is
+                tied to an account. Signed-out shoppers get a sign-in prompt below. */}
+            <div className={`mt-6 ${isAuthenticated ? "" : "hidden"}`}>
               <p className="text-sm font-medium text-slate-700 mb-2">
                 Proof of payment <span className="text-red-500">*</span>
                 <span className="ml-1 text-xs font-normal text-slate-500">(required to place order)</span>
@@ -375,15 +384,32 @@ export function ProductDetailPage() {
               >
                 Add to cart
               </button>
-              <button
-                type="button"
-                onClick={handleBuyNow}
-                disabled={orderLoading || !paymentFile}
-                className="min-h-[52px] flex-1 rounded-2xl bg-primary font-semibold text-white shadow-lg shadow-primary/25 hover:shadow-primary/35 hover:bg-orange-600 transition-all disabled:opacity-50"
-              >
-                {orderLoading ? "Placing order…" : "Buy now — lock price"}
-              </button>
+              {isAuthenticated ? (
+                <button
+                  type="button"
+                  onClick={handleBuyNow}
+                  disabled={orderLoading || !paymentFile}
+                  className="min-h-[52px] flex-1 rounded-2xl bg-primary font-semibold text-white shadow-lg shadow-primary/25 hover:shadow-primary/35 hover:bg-orange-600 transition-all disabled:opacity-50"
+                >
+                  {orderLoading ? "Placing order…" : "Buy now — lock price"}
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={goSignIn}
+                  className="min-h-[52px] flex-1 inline-flex items-center justify-center gap-2 rounded-2xl bg-primary font-semibold text-white shadow-lg shadow-primary/25 hover:shadow-primary/35 hover:bg-orange-600 transition-all"
+                >
+                  <Lock className="h-4 w-4" aria-hidden />
+                  Sign in to buy
+                </button>
+              )}
             </div>
+            {!isAuthenticated && (
+              <p className="mt-3 text-center text-sm text-slate-500 sm:text-left">
+                Your cart is saved — sign in when you&apos;re ready and we&apos;ll bring you
+                right back here.
+              </p>
+            )}
           </div>
         </div>
       </div>
