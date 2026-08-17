@@ -6,6 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 import { FormField } from "@/components/ui/FormField";
 import { Input } from "@/components/ui/Input";
+import { Skeleton, SkeletonForm } from "@/components/ui/Skeleton";
 import { useAuthStore } from "@/stores/authStore";
 import { useInventoryStore } from "@/stores/inventoryStore";
 import { productFormSchema } from "../schemas/productSchema";
@@ -24,10 +25,15 @@ export function MerchantProductFormPage() {
   const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
   const isEdit = id && id !== "new";
-  const getProduct = useInventoryStore((s) => s.getProductById);
+  // Subscribe to the list itself, not to the getter: selecting the getter never
+  // changes identity, so the page would not re-render when a fetch lands and the
+  // form would sit empty on a cold load.
+  const products = useInventoryStore((s) => s.products);
+  const hasLoaded = useInventoryStore((s) => s.hasLoaded);
+  const fetchMerchantProducts = useInventoryStore((s) => s.fetchMerchantProducts);
   const addProduct = useInventoryStore((s) => s.addProduct);
   const updateProduct = useInventoryStore((s) => s.updateProduct);
-  const product = isEdit ? getProduct(id) : null;
+  const product = isEdit ? products.find((p) => p.id === id) : null;
 
   const form = useForm({
     resolver: zodResolver(productFormSchema),
@@ -86,11 +92,32 @@ export function MerchantProductFormPage() {
     }
   }, [user?.role, navigate]);
 
+  // Landing straight on the edit URL (a bookmark, or a refresh) arrives with an
+  // empty store, so pull the inventory in rather than claiming the product is gone.
+  useEffect(() => {
+    if (isEdit && !product && !hasLoaded && user?.id) {
+      fetchMerchantProducts(user.id);
+    }
+  }, [isEdit, product, hasLoaded, user?.id, fetchMerchantProducts]);
+
   if (user?.role !== "merchant") {
     return null;
   }
 
   if (isEdit && !product) {
+    // Still fetching: show the shape of the form, not a verdict on the product.
+    if (!hasLoaded) {
+      return (
+        <div className="min-h-[calc(100vh-4rem)] bg-background">
+          <div className="mx-auto max-w-xl px-4 py-6 sm:px-6 lg:px-8">
+            <Skeleton className="mb-4 h-11 w-40 rounded-lg" />
+            <Skeleton className="h-8 w-48" />
+            <SkeletonForm className="mt-6" fields={6} label="Loading product" />
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="mx-auto max-w-lg px-4 py-12">
         <p className="text-body">Product not found.</p>

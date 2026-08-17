@@ -5,7 +5,7 @@ import { api } from "@/lib/api";
 import { CheckoutHeader } from "./components/CheckoutHeader";
 import { PickupCode } from "@/features/dashboard/components/OrderCard";
 import { StatusBadge } from "@/components/ui/StatusBadge";
-import { Skeleton } from "@/components/ui/Skeleton";
+import { Skeleton, SkeletonRegion } from "@/components/ui/Skeleton";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { formatAmount } from "@/lib/money";
 import { formatQuantity, formatTenor } from "@/features/dashboard/data/uomData";
@@ -15,7 +15,7 @@ import { WHATSAPP_NUMBER, whatsappLink } from "@/lib/contact";
 /** What the buyer should do next, per status. */
 const NEXT_STEP = {
   pending_verification: `We are checking your payment. Send the confirmation screenshot to ${WHATSAPP_NUMBER} on WhatsApp if you haven't already. Your price is locked either way.`,
-  locked: `Order is confirmed — when you require delivery please contact us on WhatsApp (${WHATSAPP_NUMBER}).`,
+  locked: `Order is confirmed, when you require delivery please contact us on WhatsApp (${WHATSAPP_NUMBER}).`,
   ready: "Ready for collection. Show the code below at the store.",
   delivered: "Collected. Thanks for shopping with us.",
   rejected:
@@ -75,12 +75,36 @@ export function GuestOrderPage() {
       <CheckoutHeader />
       <div className="mx-auto max-w-2xl px-4 py-8 sm:px-6 sm:py-12">
         {loading ? (
-          <div className="rounded-2xl border border-border bg-surface p-6">
-            <Skeleton className="h-5 w-40" />
-            <Skeleton className="mt-4 h-4 w-full" />
-            <Skeleton className="mt-2 h-4 w-2/3" />
-            <Skeleton className="mt-6 h-24 w-full" />
-          </div>
+          <SkeletonRegion label="Loading your order">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <Skeleton className="h-7 w-40" />
+                <Skeleton className="mt-2 h-3.5 w-48" />
+              </div>
+              <Skeleton className="h-6 w-28 rounded-full" />
+            </div>
+
+            <Skeleton className="mt-4 h-16 w-full rounded-xl" />
+
+            <div className="mt-6 rounded-2xl border border-border bg-surface">
+              {Array.from({ length: 2 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="flex items-start justify-between gap-4 border-b border-border px-5 py-4"
+                >
+                  <div className="min-w-0 flex-1">
+                    <Skeleton className="h-4 w-40" />
+                    <Skeleton className="mt-2 h-3 w-28" />
+                  </div>
+                  <Skeleton className="h-4 w-16 shrink-0" />
+                </div>
+              ))}
+              <div className="flex items-center justify-between gap-4 px-5 py-4">
+                <Skeleton className="h-4 w-32" />
+                <Skeleton className="h-5 w-24" />
+              </div>
+            </div>
+          </SkeletonRegion>
         ) : error ? (
           <EmptyState
             icon={AlertTriangle}

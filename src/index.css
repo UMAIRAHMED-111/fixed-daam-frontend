@@ -14,6 +14,10 @@
   --color-background: oklch(0.978 0.003 255); /* page */
   --color-surface: oklch(1 0 0); /* cards, panels */
   --color-surface-sunken: oklch(0.968 0.004 255); /* wells, inset rows */
+  /* Skeleton fill. Deliberately not surface-sunken: that sits 0.01 below the
+     page background, so placeholders vanished anywhere outside a white card.
+     This reads on both the page (0.978) and cards (1.0) without shouting. */
+  --color-skeleton: oklch(0.913 0.009 255);
   --color-card: oklch(1 0 0);
   --color-secondary: oklch(0.978 0.003 255);
 

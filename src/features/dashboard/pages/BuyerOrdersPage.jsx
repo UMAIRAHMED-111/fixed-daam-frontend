@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { Search, Package } from "lucide-react";
 import { useOrdersStore } from "@/stores/ordersStore";
+import { SkeletonOrderCards } from "@/components/ui/Skeleton";
 import { OrderCard } from "../components/OrderCard";
 
 const STATUS_TABS = [
@@ -15,7 +16,7 @@ const STATUS_TABS = [
 
 export function BuyerOrdersPage() {
   const orders = useOrdersStore((s) => s.orders);
-  const loading = useOrdersStore((s) => s.loading);
+  const hasLoaded = useOrdersStore((s) => s.hasLoaded);
   const fetchOrders = useOrdersStore((s) => s.fetchOrders);
 
   const [search, setSearch] = useState("");
@@ -146,10 +147,8 @@ export function BuyerOrdersPage() {
         )}
 
         {/* Orders list */}
-        {loading && orders.length === 0 ? (
-          <div className="rounded-2xl border border-border bg-surface p-12 text-center">
-            <p className="text-muted text-sm">Loading orders…</p>
-          </div>
+        {!hasLoaded && orders.length === 0 ? (
+          <SkeletonOrderCards count={3} label="Loading your orders" />
         ) : filtered.length === 0 ? (
           <div className="rounded-2xl border border-border bg-surface p-12 text-center">
             <Package className="mx-auto mb-3 h-10 w-10 text-slate-300" aria-hidden />

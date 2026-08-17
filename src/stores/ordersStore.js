@@ -8,6 +8,13 @@ import { api } from "@/lib/api";
 export const useOrdersStore = create((set, get) => ({
   orders: [],
   loading: false,
+  /**
+   * False until a fetch has finished at least once. `loading` alone can't carry
+   * this: it is still false on the very first render, before the effect that
+   * starts the request runs, so a screen keyed on `loading` would flash "no
+   * orders yet" for a frame before the skeleton appears.
+   */
+  hasLoaded: false,
 
   /** Fetch orders for the current user (buyers: own orders; merchants: orders with their products) */
   fetchOrders: async () => {
@@ -19,7 +26,7 @@ export const useOrdersStore = create((set, get) => ({
     } catch {
       // silent
     } finally {
-      set({ loading: false });
+      set({ loading: false, hasLoaded: true });
     }
   },
 

@@ -5,10 +5,10 @@ import { api } from "@/lib/api";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { Skeleton } from "@/components/ui/Skeleton";
+import { SkeletonOrderCards } from "@/components/ui/Skeleton";
 import { Button } from "@/components/ui/Button";
 import { StatusBadge } from "@/components/ui/StatusBadge";
-import { INPUT_CLASS, PANEL_CLASS } from "@/lib/styles";
+import { INPUT_CLASS } from "@/lib/styles";
 import { formatAmount } from "@/lib/money";
 import { formatQuantity } from "../data/uomData";
 import { WHATSAPP_NUMBER } from "@/lib/contact";
@@ -25,7 +25,9 @@ const STATUS_TABS = [
 export function AdminOrdersPage() {
   const user = useAuthStore((s) => s.user);
   const [orders, setOrders] = useState([]);
-  const [loading, setLoading] = useState(false);
+  // Starts true: the fetch is kicked off on mount, so the first paint is already
+  // a loading paint. Starting false flashed "No orders yet" for a frame.
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("pending_verification");
   const [actionLoading, setActionLoading] = useState(null);
@@ -214,16 +216,7 @@ export function AdminOrdersPage() {
 
         {/* Orders list */}
         {loading && orders.length === 0 ? (
-          <div className="space-y-4">
-            {[0, 1, 2].map((i) => (
-              <div key={i} className={`${PANEL_CLASS} p-5`}>
-                <Skeleton className="h-4 w-32" />
-                <Skeleton className="mt-4 h-3 w-48" />
-                <Skeleton className="mt-2 h-3 w-40" />
-                <Skeleton className="mt-4 h-9 w-full" />
-              </div>
-            ))}
-          </div>
+          <SkeletonOrderCards count={3} label="Loading orders for review" />
         ) : filtered.length === 0 ? (
           <EmptyState
             icon={Package}

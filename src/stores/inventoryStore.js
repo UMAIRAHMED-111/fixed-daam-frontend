@@ -8,6 +8,13 @@ import { api } from "@/lib/api";
 export const useInventoryStore = create((set, get) => ({
   products: [],
   loading: false,
+  /**
+   * False until a fetch has finished at least once. `loading` alone can't carry
+   * this: it is still false on the very first render, before the effect that
+   * starts the request runs, so a screen keyed on `loading` would flash its
+   * empty state for a frame before the skeleton appears.
+   */
+  hasLoaded: false,
 
   /** Fetch all active products (buyer view) */
   fetchAllProducts: async (params = {}) => {
@@ -19,7 +26,7 @@ export const useInventoryStore = create((set, get) => ({
     } catch {
       // silent
     } finally {
-      set({ loading: false });
+      set({ loading: false, hasLoaded: true });
     }
   },
 
@@ -34,7 +41,7 @@ export const useInventoryStore = create((set, get) => ({
     } catch {
       // silent
     } finally {
-      set({ loading: false });
+      set({ loading: false, hasLoaded: true });
     }
   },
 

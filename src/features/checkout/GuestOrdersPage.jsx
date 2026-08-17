@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { ChevronRight, Package } from "lucide-react";
 import { CheckoutHeader } from "./components/CheckoutHeader";
@@ -14,11 +14,10 @@ import { getGuestOrders, guestOrderPath } from "@/lib/guestOrders";
  * which the page says plainly rather than pretending otherwise.
  */
 export function GuestOrdersPage() {
-  const [orders, setOrders] = useState([]);
-
-  useEffect(() => {
-    setOrders(getGuestOrders());
-  }, []);
+  // Read on the first render, not in an effect. These come straight out of
+  // localStorage with nothing to wait for, so deferring it only bought a frame
+  // of "no orders saved on this device" before the real list replaced it.
+  const [orders] = useState(getGuestOrders);
 
   return (
     <div className="min-h-screen bg-background">

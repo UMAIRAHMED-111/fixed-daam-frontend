@@ -55,7 +55,7 @@ export function MerchantInventoryPage() {
   const merchantId = user?.id;
   const fetchMerchantProducts = useInventoryStore((s) => s.fetchMerchantProducts);
   const products = useInventoryStore((s) => s.getByMerchant(merchantId));
-  const loading = useInventoryStore((s) => s.loading);
+  const hasLoaded = useInventoryStore((s) => s.hasLoaded);
   const removeProduct = useInventoryStore((s) => s.removeProduct);
   const [deletingId, setDeletingId] = useState(null);
   const [search, setSearch] = useState("");
@@ -145,9 +145,9 @@ export function MerchantInventoryPage() {
           </div>
         )}
 
-        {loading && products.length === 0 ? (
+        {!hasLoaded && products.length === 0 ? (
           <div className={`${PANEL_CLASS} divide-y divide-border overflow-hidden`}>
-            <SkeletonRows count={5} />
+            <SkeletonRows count={5} label="Loading your inventory" />
           </div>
         ) : products.length === 0 ? (
           <EmptyState

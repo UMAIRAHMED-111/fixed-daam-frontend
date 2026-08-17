@@ -16,6 +16,7 @@ import { pickStockImage } from "../data/categoryImages";
 import { ProductImage } from "../components/ProductImage";
 import { Badge } from "@/components/ui/StatusBadge";
 import { Button } from "@/components/ui/Button";
+import { Skeleton, SkeletonProductDetail } from "@/components/ui/Skeleton";
 import { formatAmount } from "@/lib/money";
 
 export function ProductDetailPage() {
@@ -24,6 +25,10 @@ export function ProductDetailPage() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const inventoryProducts = useInventoryStore((s) => s.products);
   const [product, setProduct] = useState(() => inventoryProducts.find((p) => p.id === id) ?? null);
+  // Only true once the API has actually answered. Without it the page said
+  // "Product not found" for the whole duration of the fetch, which is a
+  // different claim from "we're still asking".
+  const [notFound, setNotFound] = useState(false);
   const [slideIndex, setSlideIndex] = useState(0);
   const [quantity, setQuantity] = useState("1");
 
@@ -34,12 +39,20 @@ export function ProductDetailPage() {
 
   // If product not found in local store, fetch it directly from the API
   useEffect(() => {
-    if (!product && id) {
-      api
-        .get(`/v1/products/${id}`)
-        .then((res) => setProduct(res.data))
-        .catch(() => {});
-    }
+    if (product || !id) return undefined;
+    let cancelled = false;
+    setNotFound(false);
+    api
+      .get(`/v1/products/${id}`)
+      .then((res) => {
+        if (!cancelled) setProduct(res.data);
+      })
+      .catch(() => {
+        if (!cancelled) setNotFound(true);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [id, product]);
 
   // Helpers (safe to call before product check, but only used after)
@@ -50,7 +63,7 @@ export function ProductDetailPage() {
     return uomDef?.integer ? Math.floor(n) : Number(n.toFixed(3));
   };
 
-  if (!product) {
+  if (!product && notFound) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center px-4 gap-3">
         <p className="text-body">Product not found.</p>
@@ -62,6 +75,17 @@ export function ProductDetailPage() {
           <ChevronLeft className="h-5 w-5 shrink-0" aria-hidden />
           Back to products
         </button>
+      </div>
+    );
+  }
+
+  if (!product) {
+    return (
+      <div className="min-h-[calc(100vh-4rem)] bg-background">
+        <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
+          <Skeleton className="mb-4 h-11 w-36 rounded-lg" />
+          <SkeletonProductDetail />
+        </div>
       </div>
     );
   }
@@ -210,7 +234,7 @@ export function ProductDetailPage() {
                     aria-hidden
                   />
                   Valid for <strong className="font-semibold">{tenor}</strong> after
-                  purchase — take delivery any time within that window.
+                  purchase, take delivery any time within that window.
                 </p>
               )}
             </div>
@@ -299,7 +323,7 @@ export function ProductDetailPage() {
               </Button>
             </div>
             <p className="mt-3 text-center text-sm text-muted sm:text-left">
-              Delivery is included. No account needed — you can check out as a guest.
+              Delivery is included. No account needed, you can check out as a guest.
             </p>
           </div>
         </div>

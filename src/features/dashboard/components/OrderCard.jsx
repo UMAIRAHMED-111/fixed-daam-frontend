@@ -19,6 +19,7 @@ import {
   getRemainingDeliverable,
 } from "@/features/dashboard/data/uomData";
 import { PickupHistory } from "./PickupHistory";
+import { Skeleton, SkeletonRegion } from "@/components/ui/Skeleton";
 import { formatAmount } from "@/lib/money";
 import { WHATSAPP_NUMBER, whatsappLink } from "@/lib/contact";
 
@@ -103,9 +104,14 @@ export function PickupCode({ orderId, codeUrl }) {
           </button>
         </div>
       ) : loading && !code ? (
-        <p className="text-4xl font-bold tracking-[0.25em] text-slate-300 font-mono">
-          ••••••
-        </p>
+        // Matches the code, its countdown bar and the caption beneath, so the
+        // card doesn't resize the moment the real code arrives.
+        <SkeletonRegion label="Loading pickup code">
+          <Skeleton className="mx-auto h-10 w-52" />
+          <Skeleton className="mx-auto mt-3 h-1.5 w-full max-w-[180px] rounded-full" />
+          <Skeleton className="mx-auto mt-3 h-3 w-24" />
+          <Skeleton className="mx-auto mt-3 h-3 w-44" />
+        </SkeletonRegion>
       ) : (
         <>
           <p
@@ -334,7 +340,7 @@ export function OrderCard({ order }) {
 
             {isLocked && (
               <p className="w-full text-xs text-body">
-                Order is confirmed — when you require delivery please contact us on
+                Order is confirmed, when you require delivery please contact us on
                 WhatsApp (
                 <a
                   href={whatsappLink(

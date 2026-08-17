@@ -23,6 +23,7 @@ import {
   getUom,
 } from "../data/uomData";
 import { PickupHistory } from "../components/PickupHistory";
+import { SkeletonOrderCards } from "@/components/ui/Skeleton";
 
 const STATUS_TABS = [
   { id: "all", label: "All" },
@@ -304,7 +305,7 @@ export function MerchantOrdersPage() {
   const fetchOrders = useOrdersStore((s) => s.fetchOrders);
   const markReady = useOrdersStore((s) => s.markReady);
   const validateCode = useOrdersStore((s) => s.validateCode);
-  const loading = useOrdersStore((s) => s.loading);
+  const hasLoaded = useOrdersStore((s) => s.hasLoaded);
 
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -528,10 +529,8 @@ export function MerchantOrdersPage() {
         </div>
 
         {/* Orders list */}
-        {loading && orders.length === 0 ? (
-          <div className="rounded-2xl border border-border bg-surface p-12 text-center">
-            <p className="text-muted text-sm">Loading orders…</p>
-          </div>
+        {!hasLoaded && orders.length === 0 ? (
+          <SkeletonOrderCards count={3} label="Loading orders" />
         ) : filtered.length === 0 ? (
           <div className="rounded-2xl border border-border bg-surface p-12 text-center">
             <Package className="mx-auto mb-3 h-10 w-10 text-slate-300" aria-hidden />

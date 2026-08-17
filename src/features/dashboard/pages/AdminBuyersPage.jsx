@@ -18,6 +18,7 @@ import { api } from "@/lib/api";
 import { toast } from "sonner";
 import { formatQuantity } from "../data/uomData";
 import { formatAmount } from "@/lib/money";
+import { SkeletonDetailPanel, SkeletonPeopleRows } from "@/components/ui/Skeleton";
 
 const STATUS_LABEL = {
   pending_verification: "Pending",
@@ -77,7 +78,7 @@ function BuyerDetail({ buyerId }) {
   }, [buyerId]);
 
   if (loading) {
-    return <div className="px-5 py-4 text-sm text-muted">Loading details…</div>;
+    return <SkeletonDetailPanel label="Loading buyer details" />;
   }
   if (!data) return null;
 
@@ -178,7 +179,9 @@ function BuyerDetail({ buyerId }) {
 export function AdminBuyersPage() {
   const user = useAuthStore((s) => s.user);
   const [buyers, setBuyers] = useState([]);
-  const [loading, setLoading] = useState(false);
+  // Starts true: the fetch is kicked off on mount, so the first paint is already
+  // a loading paint. Starting false flashed "No buyers yet" for a frame.
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [expandedId, setExpandedId] = useState(null);
 
@@ -277,9 +280,7 @@ export function AdminBuyersPage() {
         </div>
 
         {loading && buyers.length === 0 ? (
-          <div className="rounded-2xl border border-border bg-surface p-12 text-center">
-            <p className="text-sm text-muted">Loading buyers…</p>
-          </div>
+          <SkeletonPeopleRows count={4} label="Loading buyers" />
         ) : filtered.length === 0 ? (
           <div className="rounded-2xl border border-border bg-surface p-12 text-center">
             <UserIcon

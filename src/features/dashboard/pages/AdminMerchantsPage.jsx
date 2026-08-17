@@ -17,6 +17,7 @@ import { api } from "@/lib/api";
 import { toast } from "sonner";
 import { formatQuantity } from "../data/uomData";
 import { formatAmount } from "@/lib/money";
+import { SkeletonDetailPanel, SkeletonPeopleRows } from "@/components/ui/Skeleton";
 
 const STATUS_LABEL = {
   pending_verification: "Pending",
@@ -76,9 +77,7 @@ function MerchantDetail({ merchantId }) {
   }, [merchantId]);
 
   if (loading) {
-    return (
-      <div className="px-5 py-4 text-sm text-muted">Loading details…</div>
-    );
+    return <SkeletonDetailPanel label="Loading merchant details" />;
   }
   if (!data) return null;
 
@@ -210,7 +209,9 @@ function MerchantDetail({ merchantId }) {
 export function AdminMerchantsPage() {
   const user = useAuthStore((s) => s.user);
   const [merchants, setMerchants] = useState([]);
-  const [loading, setLoading] = useState(false);
+  // Starts true: the fetch is kicked off on mount, so the first paint is already
+  // a loading paint. Starting false flashed "No merchants yet" for a frame.
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [expandedId, setExpandedId] = useState(null);
 
@@ -307,9 +308,7 @@ export function AdminMerchantsPage() {
 
         {/* List */}
         {loading && merchants.length === 0 ? (
-          <div className="rounded-2xl border border-border bg-surface p-12 text-center">
-            <p className="text-sm text-muted">Loading merchants…</p>
-          </div>
+          <SkeletonPeopleRows count={4} label="Loading merchants" />
         ) : filtered.length === 0 ? (
           <div className="rounded-2xl border border-border bg-surface p-12 text-center">
             <Store className="mx-auto mb-3 h-10 w-10 text-slate-300" aria-hidden />

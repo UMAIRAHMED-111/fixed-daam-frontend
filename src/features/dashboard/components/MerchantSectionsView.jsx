@@ -1,10 +1,12 @@
 import { useMemo } from "react";
 import { Store } from "lucide-react";
 import { ProductCard } from "./ProductCard";
+import { SkeletonMerchantSections } from "@/components/ui/Skeleton";
 import { useInventoryStore } from "@/stores/inventoryStore";
 
 export function MerchantSectionsView({ search, category, priceMin, priceMax }) {
   const allProducts = useInventoryStore((s) => s.products);
+  const hasLoaded = useInventoryStore((s) => s.hasLoaded);
 
   const filtered = useMemo(() => {
     let list = [...allProducts];
@@ -38,6 +40,12 @@ export function MerchantSectionsView({ search, category, priceMin, priceMax }) {
       a.name.localeCompare(b.name)
     );
   }, [filtered]);
+
+  // Same as the grid view: an empty list before the first fetch lands means
+  // "still loading", not "nothing matches".
+  if (!hasLoaded && allProducts.length === 0) {
+    return <SkeletonMerchantSections sections={2} perSection={3} />;
+  }
 
   if (merchantSections.length === 0) {
     return (

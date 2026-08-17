@@ -15,7 +15,7 @@ export function StorefrontSection() {
   const [category, setCategory] = useState("all");
 
   const products = useInventoryStore((s) => s.products);
-  const loading = useInventoryStore((s) => s.loading);
+  const hasLoaded = useInventoryStore((s) => s.hasLoaded);
 
   const categories = useMemo(() => {
     const counts = new Map();
@@ -100,7 +100,7 @@ export function StorefrontSection() {
           </div>
         )}
 
-        {loading && products.length === 0 ? (
+        {!hasLoaded && products.length === 0 ? (
           <SkeletonCards className="mt-10" count={6} />
         ) : merchants.length === 0 ? (
           <EmptyState

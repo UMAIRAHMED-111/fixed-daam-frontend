@@ -1,9 +1,11 @@
 import { useMemo } from "react";
 import { ProductCard } from "./ProductCard";
+import { SkeletonCards } from "@/components/ui/Skeleton";
 import { useInventoryStore } from "@/stores/inventoryStore";
 
 export function ProductGrid({ search, category, priceMin, priceMax }) {
   const allProducts = useInventoryStore((s) => s.products);
+  const hasLoaded = useInventoryStore((s) => s.hasLoaded);
 
   const filtered = useMemo(() => {
     let list = [...allProducts];
@@ -27,6 +29,12 @@ export function ProductGrid({ search, category, priceMin, priceMax }) {
     }
     return list;
   }, [search, category, priceMin, priceMax, allProducts]);
+
+  // Nothing has come back yet, so an empty list means "still loading", not
+  // "nothing matches". Saying the latter first would be a lie the user reads.
+  if (!hasLoaded && allProducts.length === 0) {
+    return <SkeletonCards count={6} />;
+  }
 
   if (filtered.length === 0) {
     return (
