@@ -1,7 +1,13 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import { Layout } from "@/components/layout/Layout";
 import { HomePage } from "@/features/home";
-import { AuthPage, MerchantAuthPage, VerifyEmailPage, AdminLoginPage } from "@/features/auth";
+import {
+  AuthPage,
+  MerchantAuthPage,
+  VerifyEmailPage,
+  AdminLoginPage,
+  ResetPasswordPage,
+} from "@/features/auth";
 import { DashboardPage, DashboardIndex, DashboardOrdersPage } from "@/features/dashboard";
 import { ProductDetailPage } from "@/features/dashboard/pages/ProductDetailPage";
 import { MerchantInventoryPage } from "@/features/dashboard/pages/MerchantInventoryPage";
@@ -30,6 +36,9 @@ export default function App() {
         <Route path="/merchant" element={<MerchantAuthPage />} />
         <Route path="/admin" element={<AdminLoginPage />} />
         <Route path="/verify-email" element={<VerifyEmailPage />} />
+        {/* Landing pages for the links in our transactional emails. Both read
+            their token from the query string. */}
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
         {/* Public storefront product page, browsing needs no account */}
         <Route path="/product/:id" element={<ProductDetailPage />} />
         {/* Staged checkout, signing in happens at the contact step */}

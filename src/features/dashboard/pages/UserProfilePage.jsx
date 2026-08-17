@@ -58,7 +58,6 @@ function Avatar({ name }) {
 export function UserProfilePage() {
   const user = useAuthStore((s) => s.user);
   const updateUser = useAuthStore((s) => s.updateUser);
-  const setTokens = useAuthStore((s) => s.setTokens);
   const isMerchant = user?.role === "merchant";
 
   // Profile form
@@ -100,16 +99,15 @@ export function UserProfilePage() {
 
   const handlePasswordChange = async (data) => {
     try {
-      const res = await api.post("/v1/auth/change-password", {
+      // The server blacklists this account's other refresh tokens and sets fresh
+      // HttpOnly auth cookies on this response, so there is nothing to store
+      // client-side: this session stays valid, the others are dropped.
+      await api.post("/v1/auth/change-password", {
         oldPassword: data.oldPassword,
         newPassword: data.newPassword,
       });
-      // Server invalidates old refresh tokens and issues new ones
-      if (res.data?.tokens) {
-        setTokens(res.data.tokens.access.token, res.data.tokens.refresh.token);
-      }
       passwordForm.reset();
-      toast.success("Password changed successfully");
+      toast.success("Password changed. Your other devices have been signed out.");
     } catch (err) {
       toast.error(err.response?.data?.message || "Failed to change password");
     }

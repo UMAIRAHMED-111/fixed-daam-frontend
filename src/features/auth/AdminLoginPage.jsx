@@ -1,9 +1,10 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { ChevronLeft, ShieldCheck } from "lucide-react";
+import { ForgotPasswordPane } from "./components/ForgotPasswordPane";
 import { loginSchema } from "./schemas/authSchemas";
 import { useAuthStore } from "@/stores/authStore";
 import { api } from "@/lib/api";
@@ -15,6 +16,7 @@ import { trimFormData } from "@/lib/formUtils";
 export function AdminLoginPage() {
   const navigate = useNavigate();
   const { login, isAuthenticated, user } = useAuthStore();
+  const [showForgot, setShowForgot] = useState(false);
 
   const form = useForm({
     defaultValues: { email: "", password: "" },
@@ -62,21 +64,38 @@ export function AdminLoginPage() {
           Restricted access, authorised personnel only.
         </p>
 
-        <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
-          <FormField label="Email" required error={form.formState.errors.email?.message} id="email">
-            <Input type="email" placeholder="admin@example.com" {...form.register("email")} />
-          </FormField>
-          <FormField label="Password" required error={form.formState.errors.password?.message} id="password">
-            <PasswordInput placeholder="••••••••" {...form.register("password")} />
-          </FormField>
-          <button
-            type="submit"
-            disabled={form.formState.isSubmitting}
-            className="w-full min-h-[48px] inline-flex items-center justify-center rounded-xl bg-red-600 px-4 text-sm font-semibold text-white shadow-lg shadow-red-600/20 hover:bg-red-700 transition-colors disabled:opacity-50 touch-manipulation"
-          >
-            {form.formState.isSubmitting ? "Signing in…" : "Sign in"}
-          </button>
-        </form>
+        {showForgot ? (
+          <ForgotPasswordPane
+            defaultEmail={form.getValues("email")}
+            onBack={() => setShowForgot(false)}
+            accent="bg-red-600 text-white shadow-lg shadow-red-600/20 hover:bg-red-700"
+          />
+        ) : (
+          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+            <FormField label="Email" required error={form.formState.errors.email?.message} id="email">
+              <Input type="email" placeholder="admin@example.com" {...form.register("email")} />
+            </FormField>
+            <FormField label="Password" required error={form.formState.errors.password?.message} id="password">
+              <PasswordInput placeholder="••••••••" {...form.register("password")} />
+            </FormField>
+            <button
+              type="submit"
+              disabled={form.formState.isSubmitting}
+              className="w-full min-h-[48px] inline-flex items-center justify-center rounded-xl bg-red-600 px-4 text-sm font-semibold text-white shadow-lg shadow-red-600/20 hover:bg-red-700 transition-colors disabled:opacity-50 touch-manipulation"
+            >
+              {form.formState.isSubmitting ? "Signing in…" : "Sign in"}
+            </button>
+            <p className="text-center text-sm text-muted">
+              <button
+                type="button"
+                onClick={() => setShowForgot(true)}
+                className="font-medium text-red-600 hover:underline"
+              >
+                Forgot password?
+              </button>
+            </p>
+          </form>
+        )}
       </div>
 
       <Link

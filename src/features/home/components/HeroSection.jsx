@@ -10,6 +10,7 @@ import { RateBoard } from "./RateBoard";
  */
 export function HeroSection() {
   const products = useInventoryStore((s) => s.products);
+  const hasLoaded = useInventoryStore((s) => s.hasLoaded);
 
   return (
     <section className="relative overflow-hidden bg-board text-chalk">
@@ -61,7 +62,7 @@ export function HeroSection() {
         </div>
 
         <div className="flex justify-center lg:justify-end">
-          <RateBoard products={products} />
+          <RateBoard products={products} hasLoaded={hasLoaded} />
         </div>
       </div>
     </section>

@@ -8,6 +8,7 @@ import { FormField } from "@/components/ui/FormField";
 import { Input } from "@/components/ui/Input";
 import { PasswordInput } from "@/components/ui/PasswordInput";
 import { PasswordStrengthMeter } from "./PasswordStrengthMeter";
+import { ForgotPasswordPane } from "./ForgotPasswordPane";
 import { loginSchema, buyerSignUpSchema, merchantSignUpSchema } from "../schemas/authSchemas";
 import { useAuthStore } from "@/stores/authStore";
 import { api } from "@/lib/api";
@@ -19,7 +20,9 @@ export function AuthForm({ authType = "buyer" }) {
   const login = useAuthStore((s) => s.login);
   const isMerchant = authType === "merchant";
   const from = location.state?.from?.pathname;
-  const [isSignUp, setIsSignUp] = useState(false);
+  // "signin" | "signup" | "forgot". Three panes in one card, so asking for a
+  // reset doesn't cost a navigation away from the sign-in the person came for.
+  const [mode, setMode] = useState("signin");
   const [showVerifyModal, setShowVerifyModal] = useState(false);
   const [registeredEmail, setRegisteredEmail] = useState("");
   // Shown after a failed sign-in: the most common cause is being at the wrong door.
@@ -47,13 +50,13 @@ export function AuthForm({ authType = "buyer" }) {
 
   const switchToSignUp = () => {
     const email = loginForm.getValues("email");
-    setIsSignUp(true);
+    setMode("signup");
     if (email) signUpForm.setValue("email", email);
   };
 
   const switchToSignIn = () => {
     const email = signUpForm.getValues("email");
-    setIsSignUp(false);
+    setMode("signin");
     if (email) loginForm.setValue("email", email);
   };
 
@@ -135,8 +138,16 @@ export function AuthForm({ authType = "buyer" }) {
         </button>
       </Dialog>
 
+      {/* ── Forgot password ── */}
+      {mode === "forgot" && (
+        <ForgotPasswordPane
+          defaultEmail={loginForm.getValues("email")}
+          onBack={() => setMode("signin")}
+        />
+      )}
+
       {/* ── Sign-in form ── */}
-      {!isSignUp && (
+      {mode === "signin" && (
         <form onSubmit={loginForm.handleSubmit(handleLogin)} className="space-y-4">
           <FormField label="Email" required error={loginForm.formState.errors.email?.message} id="email">
             <Input type="email" placeholder="you@example.com" {...loginForm.register("email")} />
@@ -166,6 +177,15 @@ export function AuthForm({ authType = "buyer" }) {
             </p>
           )}
           <p className="text-center text-sm text-muted">
+            <button
+              type="button"
+              onClick={() => setMode("forgot")}
+              className="text-primary font-medium hover:underline"
+            >
+              Forgot password?
+            </button>
+          </p>
+          <p className="text-center text-sm text-muted">
             No account?{" "}
             <button type="button" onClick={switchToSignUp} className="text-primary font-medium hover:underline">
               Create account
@@ -175,7 +195,7 @@ export function AuthForm({ authType = "buyer" }) {
       )}
 
       {/* ── Sign-up form ── */}
-      {isSignUp && (
+      {mode === "signup" && (
         <form onSubmit={signUpForm.handleSubmit(handleSignUp)} className="space-y-4">
 
           {isMerchant ? (

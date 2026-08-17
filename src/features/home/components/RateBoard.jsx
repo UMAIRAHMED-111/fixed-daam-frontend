@@ -1,20 +1,42 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ArrowUp } from "lucide-react";
+import { CalendarClock, Lock } from "lucide-react";
 import { formatAmount } from "@/lib/money";
+import { formatTenor, getTenorExpiry, getUom } from "@/features/dashboard/data/uomData";
+
+/**
+ * What one unit of the price is, short enough for a board column. The merchant's
+ * own bundle label ("Butter Bundle - 5 Pieces") is too long to survive here, so
+ * bundles fall back to their composition.
+ */
+const boardUnit = (p) => {
+  if (p.uom !== "bundle") return `per ${getUom(p.uom).short}`;
+  const inner = p.bundleUom ? getUom(p.bundleUom) : null;
+  if (!p.bundleSize) return "per pack";
+  if (!inner || inner.value === "each") return `per pack of ${p.bundleSize}`;
+  return `per pack of ${p.bundleSize} × ${inner.short}`;
+};
 
 /**
  * The rate board.
  *
- * A kiryana's price board, except one column has stopped moving. Bazaar rates
- * climb while the locked column sits still under a stamp. This is the whole
- * product argument, so it gets to be the loudest thing on the site.
+ * A kiryana's price board, with the one column a bazaar board can't have: how
+ * long the price is good for. Every figure here comes from the live catalogue —
+ * the merchant's price, the merchant's tenor, and the date that tenor lands on
+ * if you buy today. Nothing is illustrative, so nothing has to be disclaimed.
  *
- * The bazaar column is illustrative, not a market feed, and says so.
+ * (It used to show a made-up "bazaar" column climbing above the locked price.
+ * Invented comparison numbers read as invented, which undercuts the one thing
+ * this board is for: being believable about price.)
  *
  * @param {Object} props
- * @param {Array} props.products - Real catalogue items; falls back to staples
+ * @param {Array} props.products - Live catalogue items
+ * @param {boolean} props.hasLoaded - Whether the catalogue fetch has settled
  */
-export function RateBoard({ products = [] }) {
+export function RateBoard({ products = [], hasLoaded = false }) {
+  // One clock reading for the whole board, so the header date and every
+  // "till" date agree with each other.
+  const now = useMemo(() => new Date(), []);
+
   const rows = useMemo(() => {
     // One line per staple. Two sizes of the same butter would read as padding,
     // not as a basket, so keep the first of each distinct item.
@@ -26,145 +48,224 @@ export function RateBoard({ products = [] }) {
       return true;
     });
 
-    const source = distinct.length
-      ? distinct.slice(0, 3)
-      : [
-          { id: "a", name: "Cooking oil, 5 L", price: 4200 },
-          { id: "b", name: "Rice, 10 kg", price: 3600 },
-          { id: "c", name: "Washing powder, 1 kg", price: 850 },
-        ];
-    // A steady, deterministic climb per row, so the board reads as a market
-    // that has moved rather than random noise.
-    return source.map((p, i) => {
-      const drift = [0.14, 0.09, 0.11, 0.07][i % 4];
+    return distinct.slice(0, 3).map((p) => {
+      const expiry = getTenorExpiry(p, now);
       return {
         id: p.id,
         name: p.name,
-        locked: Number(p.price) || 0,
-        market: Math.round((Number(p.price) || 0) * (1 + drift)),
+        unit: boardUnit(p),
+        price: Number(p.price) || 0,
+        tenor: formatTenor(p),
+        till: expiry
+          ? expiry.toLocaleDateString("en-GB", {
+              day: "numeric",
+              month: "short",
+              ...(expiry.getFullYear() === now.getFullYear() ? {} : { year: "numeric" }),
+            })
+          : null,
       };
     });
-  }, [products]);
-
-  const [shown, setShown] = useState(() => rows.map((r) => r.locked));
-  const [bumped, setBumped] = useState(null);
-  const [stamped, setStamped] = useState(false);
-  const frameRef = useRef(null);
+  }, [products, now]);
 
   const reduceMotion =
     typeof window !== "undefined" &&
     window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
 
-  // Count the bazaar column up from the locked price to today's rate, once.
+  // Rows get chalked on one after another, then the stamp comes down on top.
+  const [written, setWritten] = useState(() => (reduceMotion ? 99 : 0));
+  const [stamped, setStamped] = useState(() => reduceMotion);
+
+  // Only rows that aren't on the board yet get written. A later refetch must not
+  // blank the board and chalk it again — the catalogue reloading is not an event
+  // a reader needs animated at them.
+  const writtenRef = useRef(written);
+  const write = (n) => {
+    writtenRef.current = Math.max(writtenRef.current, n);
+    setWritten(writtenRef.current);
+  };
+
   useEffect(() => {
-    if (reduceMotion) {
-      setShown(rows.map((r) => r.market));
+    if (reduceMotion || rows.length === 0) return undefined;
+    const from = writtenRef.current;
+    if (from >= rows.length) {
       setStamped(true);
       return undefined;
     }
 
-    setShown(rows.map((r) => r.locked));
-    const start = performance.now();
-    const DURATION = 1400;
-
-    const tick = (now) => {
-      const t = Math.min(1, (now - start) / DURATION);
-      // ease-out-quart, so the climb decelerates into the final rate
-      const eased = 1 - Math.pow(1 - t, 4);
-      setShown(rows.map((r) => Math.round(r.locked + (r.market - r.locked) * eased)));
-      if (t < 1) frameRef.current = requestAnimationFrame(tick);
-    };
-    frameRef.current = requestAnimationFrame(tick);
-    const stampTimer = setTimeout(() => setStamped(true), 900);
-
+    const timers = rows.slice(from).map((_, k) =>
+      setTimeout(() => write(from + k + 1), 260 + k * 220)
+    );
+    const stampTimer = setTimeout(() => setStamped(true), 320 + (rows.length - from) * 220);
     return () => {
-      if (frameRef.current) cancelAnimationFrame(frameRef.current);
+      timers.forEach(clearTimeout);
       clearTimeout(stampTimer);
     };
-  }, [rows, reduceMotion]);
-
-  // After the climb, nudge one row every few seconds. The point is that the
-  // bazaar never settles, which is exactly what the locked column answers.
-  useEffect(() => {
-    if (reduceMotion || rows.length === 0) return undefined;
-    let i = 0;
-    const interval = setInterval(() => {
-      const index = i % rows.length;
-      i += 1;
-      setShown((current) =>
-        current.map((value, idx) => (idx === index ? value + Math.max(1, Math.round(value * 0.004)) : value))
-      );
-      setBumped(index);
-      setTimeout(() => setBumped(null), 900);
-    }, 3200);
-    return () => clearInterval(interval);
   }, [rows.length, reduceMotion]);
 
-  const today = new Date().toLocaleDateString("en-GB", {
-    day: "numeric",
-    month: "short",
-  });
+  const today = now.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+  const isLoading = !hasLoaded && rows.length === 0;
+  const total = products.length;
+  // Nothing on the board expires: say that once down the whole column instead of
+  // stamping "no expiry" on every line.
+  const allOpen = rows.length > 0 && rows.every((r) => !r.tenor);
+
+  // When the shops last touched a rate. Real freshness beats a "live" badge
+  // that means nothing, so it goes next to the item count.
+  const lastSet = useMemo(() => {
+    const newest = products.reduce((max, p) => {
+      const t = new Date(p.updatedAt ?? p.createdAt ?? 0).getTime();
+      return Number.isFinite(t) && t > max ? t : max;
+    }, 0);
+    if (!newest) return null;
+    const midnight = (d) => new Date(d).setHours(0, 0, 0, 0);
+    const days = Math.round((midnight(now) - midnight(newest)) / 86400000);
+    if (days <= 0) return "set today";
+    if (days === 1) return "set yesterday";
+    return `set ${new Date(newest).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}`;
+  }, [products, now]);
 
   return (
     <figure className="relative w-full max-w-[30rem]">
       <div className="overflow-hidden rounded-2xl bg-board-raised ring-1 ring-board-line/60 shadow-[0_24px_60px_-20px_rgba(0,0,0,0.6)]">
         <div className="flex items-baseline justify-between gap-4 border-b border-board-line/60 px-5 py-3.5">
           <p className="label-cap text-chalk-dim">Rate board</p>
-          <p className="label-cap tnum text-chalk-dim">{today}</p>
+          <p className="label-cap tnum text-chalk-dim">
+            {rows.length > 0 && (
+              <span className="mr-2 inline-flex items-center gap-1.5 text-stamp">
+                <span className="relative flex h-1.5 w-1.5">
+                  {!reduceMotion && (
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-stamp opacity-70" />
+                  )}
+                  <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-stamp" />
+                </span>
+                Live
+              </span>
+            )}
+            {today}
+          </p>
         </div>
 
         <table className="w-full">
           <caption className="sr-only-text">
-            Today&apos;s bazaar rates compared with the price FixedDaam holds for
-            you. Bazaar figures are illustrative.
+            Today&apos;s rates from shops on FixedDaam, with how long each price
+            is held after you buy it.
           </caption>
           <thead>
             <tr className="label-cap text-chalk-dim">
               <th scope="col" className="px-5 pb-2 pt-3 text-left font-bold">
                 Item
               </th>
-              <th scope="col" className="px-2 pb-2 pt-3 text-right font-bold">
-                Bazaar
-              </th>
-              <th scope="col" className="px-5 pb-2 pt-3 text-right font-bold text-stamp">
+              <th scope="col" className="whitespace-nowrap px-2 pb-2 pt-3 text-right font-bold">
                 Your daam
+                {/* Currency belongs on the board, but not at the cost of a
+                    three-line header on a phone. */}
+                <span className="hidden font-medium opacity-70 sm:inline"> PKR</span>
+              </th>
+              <th
+                scope="col"
+                className="whitespace-nowrap px-5 pb-2 pt-3 text-right font-bold text-stamp"
+              >
+                Held for
               </th>
             </tr>
           </thead>
           <tbody className="text-display">
-            {rows.map((row, i) => (
-              <tr key={row.id} className="border-t border-board-line/40">
-                <td className="max-w-[11rem] truncate px-5 py-3 font-sans text-sm font-medium normal-case tracking-normal text-chalk">
-                  {row.name}
-                </td>
-                <td
-                  className="tnum px-2 py-3 text-right text-2xl text-chalk-dim"
-                  aria-hidden
-                >
-                  <span
-                    className={`inline-flex items-center gap-1 transition-colors duration-500 ${
-                      bumped === i ? "text-danger" : ""
-                    }`}
-                  >
-                    <ArrowUp
-                      className={`h-3.5 w-3.5 transition-opacity duration-500 ${
-                        bumped === i ? "opacity-100" : "opacity-45"
-                      }`}
+            {isLoading &&
+              [0, 1, 2].map((i) => (
+                <tr key={i} className="border-t border-board-line/40">
+                  <td className="px-5 py-[1.35rem]" colSpan={3}>
+                    <span
+                      className="block h-3.5 animate-pulse rounded bg-chalk/10"
+                      style={{ width: `${80 - i * 12}%`, animationDelay: `${i * 160}ms` }}
                     />
-                    {formatAmount(shown[i] ?? row.market).replace(".00", "")}
+                  </td>
+                </tr>
+              ))}
+
+            {!isLoading && rows.length === 0 && (
+              <tr className="border-t border-board-line/40">
+                <td className="px-5 py-8 text-center" colSpan={3}>
+                  <p className="font-sans text-sm text-chalk-dim">
+                    Shops are still posting today&apos;s rates. The board fills in
+                    as they list.
+                  </p>
+                </td>
+              </tr>
+            )}
+
+            {rows.map((row, i) => (
+              <tr
+                key={row.id}
+                className={`border-t border-board-line/40 ${
+                  reduceMotion
+                    ? ""
+                    : "transition-[opacity,transform] duration-500 ease-[var(--ease-out-quart)]"
+                } ${written > i ? "translate-y-0 opacity-100" : "translate-y-1 opacity-0"}`}
+              >
+                <td className="max-w-[10.5rem] px-5 py-3 font-sans normal-case tracking-normal">
+                  <span className="block truncate text-sm font-medium text-chalk">
+                    {row.name}
                   </span>
+                  {row.unit && (
+                    <span className="mt-0.5 block truncate text-xs text-chalk-dim">
+                      {row.unit}
+                    </span>
+                  )}
                 </td>
-                <td className="tnum px-5 py-3 text-right text-2xl text-chalk">
-                  {formatAmount(row.locked).replace(".00", "")}
+                <td className="tnum px-2 py-3 text-right align-top text-2xl text-chalk">
+                  {formatAmount(row.price).replace(".00", "")}
                 </td>
+                {allOpen ? (
+                  i === 0 && (
+                    <td
+                      className="border-l border-board-line/40 px-5 text-center align-middle"
+                      rowSpan={rows.length}
+                    >
+                      <span className="block whitespace-nowrap text-xl leading-none text-stamp">
+                        No expiry
+                      </span>
+                      <span className="mt-1.5 block font-sans text-xs normal-case tracking-normal text-chalk-dim">
+                        collect any time
+                      </span>
+                    </td>
+                  )
+                ) : (
+                  <td className="px-5 py-3 text-right align-top">
+                    <span className="tnum block whitespace-nowrap text-xl text-stamp">
+                      {row.tenor || "No expiry"}
+                    </span>
+                    <span className="mt-0.5 block whitespace-nowrap font-sans text-xs normal-case tracking-normal text-chalk-dim">
+                      {row.till ? `till ${row.till}` : "collect any time"}
+                    </span>
+                  </td>
+                )}
               </tr>
             ))}
           </tbody>
         </table>
 
-        <p className="border-t border-board-line/40 py-3 pl-5 pr-24 font-sans text-xs leading-relaxed text-chalk-dim sm:pr-28">
-          Your daam is what you pay at checkout and what you collect at, however
-          long you wait. Bazaar figures shown for comparison.
+        <p className="flex items-start gap-2 border-t border-board-line/40 py-3 pl-5 pr-24 font-sans text-xs leading-relaxed text-chalk-dim sm:pr-28">
+          {rows.length > 0 ? (
+            <>
+              <CalendarClock className="mt-px h-3.5 w-3.5 shrink-0" aria-hidden />
+              <span>
+                {allOpen
+                  ? "Pay today’s daam, collect whenever you’re ready — in one visit or five."
+                  : "Pay today’s daam, collect inside your window — in one visit or five."}{" "}
+                <a href="#shop" className="font-medium text-chalk underline underline-offset-2">
+                  {total} {total === 1 ? "item" : "items"} on the board
+                </a>
+                {lastSet ? `, rates ${lastSet}.` : "."}
+              </span>
+            </>
+          ) : (
+            <>
+              <Lock className="mt-px h-3.5 w-3.5 shrink-0" aria-hidden />
+              <span>
+                Every rate posted here is held for the window the shop sets on it.
+              </span>
+            </>
+          )}
         </p>
       </div>
 

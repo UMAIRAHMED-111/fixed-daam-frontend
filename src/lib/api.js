@@ -23,8 +23,20 @@ api.interceptors.response.use(
     const original = error.config;
     const isRefreshCall = original?.url?.includes("/auth/refresh-tokens");
     const isLogoutCall = original?.url?.includes("/auth/logout");
+    // reset-password answers 401 for an expired or spent link. That is the real
+    // answer for the caller, not a stale access token, so it must not be turned
+    // into a refresh attempt that fails and logs the visitor out with the wrong
+    // message. These are signed-out endpoints, so refreshing could never help.
+    const isPasswordResetCall =
+      original?.url?.includes("/auth/reset-password") || original?.url?.includes("/auth/forgot-password");
 
-    if (error.response?.status === 401 && !original._retry && !isRefreshCall && !isLogoutCall) {
+    if (
+      error.response?.status === 401 &&
+      !original._retry &&
+      !isRefreshCall &&
+      !isLogoutCall &&
+      !isPasswordResetCall
+    ) {
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
           waitQueue.push({ resolve, reject });

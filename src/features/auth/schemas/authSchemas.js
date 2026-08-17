@@ -13,6 +13,23 @@ const passwordSchema = z
   .regex(/[0-9]/, "Must contain a number")
   .regex(/[^A-Za-z0-9]/, "Must contain a special character (!@#$%^&* …)");
 
+// Email is trimmed before the format check, not after: a padded address pasted
+// from an email client would otherwise fail validation and never reach the
+// submit handler that does the trimming.
+export const forgotPasswordSchema = z.object({
+  email: z.string().trim().min(1, "Email is required").email("Invalid email"),
+});
+
+export const resetPasswordSchema = z
+  .object({
+    password: passwordSchema,
+    confirmPassword: z.string().min(1, "Please confirm your password"),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Passwords do not match",
+    path: ["confirmPassword"],
+  });
+
 export const buyerSignUpSchema = z
   .object({
     phoneNumber: z
