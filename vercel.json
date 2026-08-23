@@ -1,3 +1,11 @@
 {
-    "routes": [{ "src": "/[^.]+", "dest": "/", "status": 200 }]
+  "redirects": [
+    {
+      "source": "/:path*",
+      "has": [{ "type": "host", "value": "www.fixeddaam.com" }],
+      "destination": "https://fixeddaam.com/:path*",
+      "permanent": true
+    }
+  ],
+  "rewrites": [{ "source": "/:path*", "destination": "/" }]
 }
